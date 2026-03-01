@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Habit Tracker</title>
+<title>Habit Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -166,7 +166,7 @@
 <!-- AUTH SCREEN -->
 <div id="authScreen">
   <div class="auth-box">
-    <div class="auth-logo">RITU<span>AL</span></div>
+    <div class="auth-logo">HABIT<span>S</span></div>
     <div class="auth-tagline">Build habits. Build yourself.</div>
 
     <div class="auth-tabs">
@@ -232,7 +232,7 @@
   <div class="app">
     <header>
       <div>
-        <div class="logo">RITU<span>AL</span></div>
+        <div class="logo">HABIT<span>S</span></div>
         <div class="date-display" id="dateDisplay"></div>
         <div class="user-bar">
           <div class="user-avatar" id="userAvatar"></div>
@@ -257,7 +257,7 @@
       </div>
     </div>
 
-    <div class="all-done-banner" id="allDoneBanner">★ ALL HABITS ARE COMPLETE — EXCEPTIONAL</div>
+    <div class="all-done-banner" id="allDoneBanner">★ ALL HABITS COMPLETE — EXCEPTIONAL</div>
 
     <div class="section-title">Morning</div>
     <ul class="habit-list" id="morningList"></ul>
@@ -295,7 +295,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getAuth, onAuthStateChanged,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendEmailVerification, GoogleAuthProvider, signInWithPopup,
+  sendEmailVerification, GoogleAuthProvider, signInWithRedirect, getRedirectResult,
   signOut as fbSignOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
@@ -356,10 +356,8 @@ window.handleEmailAuth = async () => {
 
 window.signInWithGoogle = async () => {
   try {
-    const r = await signInWithPopup(auth, new GoogleAuthProvider());
-    await initUserData(r.user);
-    showScreen('app');
-  } catch(e) { if(e.code!=='auth/popup-closed-by-user') showMsg(fErr(e.code),'error'); }
+    await signInWithRedirect(auth, new GoogleAuthProvider());
+  } catch(e) { showMsg(fErr(e.code),'error'); }
 };
 
 window.checkEmailVerified = async () => {
@@ -476,6 +474,18 @@ async function saveData() {
   catch(e) { await setDoc(doc(db,'users',currentUser.uid),{habits,weeklyData,lastDay:getToday()},{merge:true}); }
   setTimeout(()=>ind.classList.remove('show'),1200);
 }
+
+// ── Handle Google redirect result on page load ──
+getRedirectResult(auth).then(async result => {
+  if (result?.user) {
+    await initUserData(result.user);
+    showScreen('app');
+    renderEmojiPicker();
+    renderApp();
+  }
+}).catch(e => {
+  if (e.code) showMsg(fErr(e.code), 'error');
+});
 
 // ── Auth State ─────────────────────────────────
 onAuthStateChanged(auth, async user => {
