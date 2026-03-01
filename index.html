@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Habit Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --border: #222222;
+    --border-bright: #333333;
+    --text: #f0ede8;
+    --muted: #555555;
+    --accent: #e8ff47;
+    --accent2: #ff4757;
+    --accent3: #47ffe8;
+    --done: #1a1f0a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ===== AUTH ===== */
+  #authScreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .auth-box { width: 100%; max-width: 420px; }
+  .auth-logo { font-family: 'Bebas Neue', sans-serif; font-size: 80px; line-height: 1; letter-spacing: 4px; margin-bottom: 6px; }
+  .auth-logo span { color: var(--accent); }
+  .auth-tagline { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 40px; }
+  .auth-tabs { display: flex; border-bottom: 1px solid var(--border-bright); margin-bottom: 32px; }
+  .auth-tab { font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); padding: 10px 0; margin-right: 28px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; background: none; border-left: none; border-right: none; border-top: none; }
+  .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .method-group { display: flex; gap: 8px; margin-bottom: 28px; }
+  .method-btn { flex: 1; padding: 10px 8px; background: var(--surface); border: 1px solid var(--border-bright); color: var(--muted); font-family: 'Space Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .method-btn .method-icon { font-size: 18px; }
+  .method-btn:hover { border-color: var(--accent); color: var(--text); }
+  .method-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(232,255,71,0.06); }
+  .field-group { margin-bottom: 20px; }
+  .field-label { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 8px; }
+  .field-input { width: 100%; background: var(--surface); border: 1px solid var(--border-bright); padding: 13px 16px; font-size: 15px; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none; transition: border-color 0.2s; border-radius: 0; -webkit-appearance: none; }
+  .field-input:focus { border-color: var(--accent); }
+  .field-input::placeholder { color: var(--muted); }
+  .phone-row { display: flex; gap: 8px; }
+  .country-code { width: 100px; min-width: 100px; background: var(--surface); border: 1px solid var(--border-bright); padding: 13px 10px; font-size: 13px; font-family: 'Space Mono', monospace; color: var(--text); outline: none; cursor: pointer; }
+  .otp-row { display: flex; gap: 10px; justify-content: center; margin: 8px 0 24px; }
+  .otp-input { width: 48px; height: 56px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 28px; background: var(--surface); border: 1px solid var(--border-bright); color: var(--accent); outline: none; transition: border-color 0.2s; caret-color: var(--accent); }
+  .otp-input:focus { border-color: var(--accent); box-shadow: 0 0 12px rgba(232,255,71,0.15); }
+  .btn-primary { width: 100%; background: var(--accent); color: #0a0a0a; border: none; padding: 15px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-primary:hover { background: #d4eb2a; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-google { width: 100%; background: transparent; color: var(--text); border: 1px solid var(--border-bright); padding: 13px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; }
+  .btn-google:hover { border-color: var(--accent); background: rgba(232,255,71,0.04); }
+  .google-icon { width: 18px; height: 18px; }
+  .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .divider span { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+  .auth-msg { font-family: 'Space Mono', monospace; font-size: 10px; padding: 10px 14px; margin-bottom: 16px; letter-spacing: 1px; display: none; line-height: 1.6; }
+  .auth-msg.error { color: var(--accent2); border-left: 2px solid var(--accent2); }
+  .auth-msg.info { color: var(--accent3); border-left: 2px solid var(--accent3); }
+  .auth-msg.success { color: var(--accent); border-left: 2px solid var(--accent); }
+  .auth-msg.show { display: block; }
+  #recaptcha-container { margin-bottom: 16px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid rgba(10,10,10,0.3); border-top-color: #0a0a0a; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  .btn-primary.loading .spinner { display: block; }
+  .btn-primary.loading .btn-label { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn-outline { background: transparent; border: 1px solid var(--border-bright); color: var(--muted); padding: 10px 20px; font-family: 'Space Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: all 0.15s; }
+  .btn-outline:hover { border-color: var(--text); color: var(--text); }
+
+  /* ===== VERIFY EMAIL ===== */
+  #verifyEmailScreen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 32px; text-align: center; }
+  #verifyEmailScreen.show { display: flex; }
+  .verify-icon { font-size: 64px; margin-bottom: 24px; }
+  .verify-title { font-family: 'Bebas Neue', sans-serif; font-size: 42px; letter-spacing: 3px; margin-bottom: 12px; }
+  .verify-sub { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; line-height: 1.8; max-width: 320px; text-transform: uppercase; margin-bottom: 32px; }
+  .verify-email-addr { color: var(--accent); font-size: 12px; display: block; margin-top: 6px; }
+
+  /* ===== APP ===== */
+  #appScreen { display: none; }
+  #appScreen.show { display: block; }
+  .app { max-width: 680px; margin: 0 auto; padding: 0 24px 80px; }
+  header { padding: 48px 0 20px; border-bottom: 1px solid var(--border-bright); display: flex; justify-content: space-between; align-items: flex-end; }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 72px; line-height: 1; letter-spacing: 4px; }
+  .logo span { color: var(--accent); }
+  .header-right { text-align: right; }
+  .date-display { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+  .streak-badge { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--accent); line-height: 1; }
+  .streak-label { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+  .user-bar { display: flex; align-items: center; gap: 12px; padding: 12px 0 0; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--border-bright); font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: var(--accent); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .user-name { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .signout-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'Space Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 1px; padding: 5px 10px; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+  .signout-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .progress-section { padding: 28px 0 0; }
+  .progress-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .progress-label { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+  .progress-count { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent); letter-spacing: 2px; }
+  .progress-bar-bg { height: 4px; background: var(--border-bright); position: relative; overflow: visible; }
+  .progress-bar-fill { height: 100%; background: var(--accent); transition: width 0.6s cubic-bezier(0.16,1,0.3,1); position: relative; }
+  .progress-bar-fill::after { content: ''; position: absolute; right: -4px; top: -2px; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 12px var(--accent); }
+  .section-title { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 3px; padding: 36px 0 16px; border-bottom: 1px solid var(--border); }
+  .habit-list { list-style: none; }
+  .habit-item { border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 20px; cursor: pointer; transition: background 0.15s; position: relative; overflow: hidden; }
+  .habit-item:hover { background: var(--surface); }
+  .habit-item.done { background: var(--done); }
+  .habit-item.done .habit-name { text-decoration: line-through; color: var(--muted); }
+  .habit-check-area { width: 64px; min-width: 64px; height: 72px; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--border); }
+  .checkmark { width: 28px; height: 28px; border: 2px solid var(--border-bright); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  .habit-item.done .checkmark { background: var(--accent); border-color: var(--accent); transform: scale(1.1); box-shadow: 0 0 20px rgba(232,255,71,0.3); }
+  .check-svg { opacity: 0; transform: scale(0); transition: all 0.2s 0.1s cubic-bezier(0.34,1.56,0.64,1); }
+  .habit-item.done .check-svg { opacity: 1; transform: scale(1); }
+  .habit-content { flex: 1; padding: 16px 0; }
+  .habit-name { font-size: 16px; font-weight: 500; color: var(--text); transition: color 0.2s; margin-bottom: 3px; letter-spacing: -0.2px; }
+  .habit-sub { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .habit-streak { display: flex; gap: 4px; align-items: center; padding-right: 20px; }
+  .streak-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border-bright); }
+  .streak-dot.filled { background: var(--accent); box-shadow: 0 0 6px rgba(232,255,71,0.5); }
+  .habit-item::after { content: ''; position: absolute; inset: 0; background: var(--accent); opacity: 0; pointer-events: none; }
+  .habit-item.flash::after { animation: flashAnim 0.4s ease-out forwards; }
+  @keyframes flashAnim { 0% { opacity: 0.15; } 100% { opacity: 0; } }
+  .add-section { margin-top: 32px; border: 1px solid var(--border-bright); padding: 20px; position: relative; }
+  .add-section::before { content: 'NEW HABIT'; font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 3px; position: absolute; top: -6px; left: 16px; background: var(--bg); padding: 0 6px; }
+  .add-form { display: flex; gap: 12px; }
+  .add-input { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border-bright); padding: 8px 0; font-size: 15px; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none; transition: border-color 0.2s; }
+  .add-input::placeholder { color: var(--muted); }
+  .add-input:focus { border-color: var(--accent); }
+  .emoji-picker { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .emoji-btn { background: var(--surface); border: 1px solid var(--border-bright); border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 16px; transition: all 0.15s; }
+  .emoji-btn:hover, .emoji-btn.selected { border-color: var(--accent); background: rgba(232,255,71,0.08); }
+  .add-btn { background: var(--accent); color: #0a0a0a; border: none; padding: 8px 20px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; cursor: pointer; transition: all 0.15s; }
+  .add-btn:hover { background: #d4eb2a; }
+  .weekly-section { margin-top: 32px; }
+  .weekly-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; margin-top: 16px; }
+  .day-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .day-label { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .day-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); transition: all 0.3s; }
+  .day-dot.today { border-color: var(--accent); color: var(--accent); }
+  .day-dot.completed { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 700; }
+  .day-dot.partial { background: rgba(232,255,71,0.15); border-color: rgba(232,255,71,0.4); color: var(--accent); }
+  .delete-btn { opacity: 0; background: none; border: none; color: var(--accent2); font-size: 14px; cursor: pointer; padding: 8px; transition: opacity 0.15s; margin-right: 8px; }
+  .habit-item:hover .delete-btn { opacity: 0.6; }
+  .delete-btn:hover { opacity: 1 !important; }
+  .all-done-banner { display: none; background: var(--accent); color: #0a0a0a; padding: 16px 24px; margin-top: 24px; font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 3px; align-items: center; gap: 12px; animation: slideIn 0.5s cubic-bezier(0.16,1,0.3,1); }
+  .all-done-banner.visible { display: flex; }
+  @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .footer-quote { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .quote-text { font-family: 'Bebas Neue', sans-serif; font-size: 32px; line-height: 1.1; color: var(--border-bright); letter-spacing: 2px; white-space: pre-line; transition: color 0.3s; }
+  .quote-text.complete { color: var(--accent); text-shadow: 0 0 40px rgba(232,255,71,0.2); }
+  .saving-indicator { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; padding: 4px 0 0; opacity: 0; transition: opacity 0.3s; display: block; }
+  .saving-indicator.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">RITU<span>AL</span></div>
+    <div class="auth-tagline">Build habits. Build yourself.</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('signup')">Create Account</button>
+    </div>
+
+    <div id="authMsg" class="auth-msg"></div>
+
+    <div class="method-group">
+      <button class="method-btn active" id="methodEmail" onclick="setMethod('email')">
+        <span class="method-icon">✉️</span>Email
+      </button>
+      <button class="method-btn" id="methodPhone" onclick="setMethod('phone')">
+        <span class="method-icon">📱</span>Phone
+      </button>
+    </div>
+
+    <!-- EMAIL FORM -->
+    <div id="emailForm">
+      <div class="field-group">
+        <label class="field-label">Email Address</label>
+        <input class="field-input" id="emailInput" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <input class="field-input" id="passwordInput" type="password" placeholder="Min. 8 characters" />
+      </div>
+      <div class="field-group" id="confirmGroup" style="display:none">
+        <label class="field-label">Confirm Password</label>
+        <input class="field-input" id="confirmInput" type="password" placeholder="Re-enter password" />
+      </div>
+      <button class="btn-primary" id="emailBtn" onclick="handleEmailAuth()">
+        <span class="btn-label">SIGN IN</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+    <!-- PHONE FORM -->
+    <div id="phoneForm" style="display:none">
+      <div id="phoneStep1">
+        <div class="field-group">
+          <label class="field-label">Phone Number</label>
+          <div class="phone-row">
+            <select class="country-code" id="countryCode">
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+61">🇦🇺 +61</option>
+              <option value="+91">🇮🇳 +91</option>
+              <option value="+49">🇩🇪 +49</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+81">🇯🇵 +81</option>
+              <option value="+55">🇧🇷 +55</option>
+              <option value="+52">🇲🇽 +52</option>
+              <option value="+86">🇨🇳 +86</option>
+            </select>
+            <input class="field-input" id="phoneInput" type="tel" placeholder="555 000-0000" style="flex:1" />
+          </div>
+        </div>
+        <div id="recaptcha-container"></div>
+        <button class="btn-primary" id="sendCodeBtn" onclick="sendPhoneCode()">
+          <span class="btn-label">SEND VERIFICATION CODE</span>
+          <div class="spinner"></div>
+        </button>
+      </div>
+      <div id="phoneStep2" style="display:none">
+        <div class="field-group">
+          <label class="field-label" style="text-align:center;display:block;margin-bottom:16px">Enter the 6-digit code sent to your phone</label>
+          <div class="otp-row">
+            <input class="otp-input" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-input" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-input" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-input" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-input" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-input" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+          </div>
+        </div>
+        <button class="btn-primary" id="verifyCodeBtn" onclick="verifyPhoneCode()">
+          <span class="btn-label">VERIFY &amp; SIGN IN</span>
+          <div class="spinner"></div>
+        </button>
+        <button class="btn-outline" style="width:100%;margin-top:12px" onclick="resetPhoneStep()">← Change Number</button>
+      </div>
+    </div>
+
+    <div class="divider"><span>or continue with</span></div>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+  </div>
+</div>
+
+<!-- VERIFY EMAIL SCREEN -->
+<div id="verifyEmailScreen">
+  <div class="verify-icon">📬</div>
+  <div class="verify-title">VERIFY YOUR EMAIL</div>
+  <div class="verify-sub">
+    We sent a verification link to
+    <span class="verify-email-addr" id="verifyEmailAddr"></span>
+    Click the link in the email, then press the button below.
+  </div>
+  <button class="btn-primary" style="max-width:320px" onclick="checkEmailVerified()">
+    <span class="btn-label">I'VE VERIFIED — LET ME IN</span>
+    <div class="spinner"></div>
+  </button>
+  <button class="btn-outline" style="margin-top:12px" onclick="resendVerification()">Resend Email</button>
+  <button class="btn-outline" style="margin-top:8px" onclick="backToAuth()">← Use Different Account</button>
+  <div id="verifyMsg" class="auth-msg" style="margin-top:16px;max-width:360px;text-align:center"></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appScreen">
+  <div class="app">
+    <header>
+      <div>
+        <div class="logo">RITU<span>AL</span></div>
+        <div class="date-display" id="dateDisplay"></div>
+        <div class="user-bar">
+          <div class="user-avatar" id="userAvatar"></div>
+          <div class="user-name" id="userName"></div>
+          <button class="signout-btn" onclick="doSignOut()">Sign Out</button>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="streak-badge" id="streakNum">0</div>
+        <div class="streak-label">day streak</div>
+        <span class="saving-indicator" id="savingIndicator">Saving...</span>
+      </div>
+    </header>
+
+    <div class="progress-section">
+      <div class="progress-meta">
+        <span class="progress-label">Today's Progress</span>
+        <span class="progress-count" id="progressCount">0 / 0</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="all-done-banner" id="allDoneBanner">★ ALL HABITS COMPLETE — EXCEPTIONAL</div>
+
+    <div class="section-title">Morning</div>
+    <ul class="habit-list" id="morningList"></ul>
+    <div class="section-title" style="margin-top:8px">Day</div>
+    <ul class="habit-list" id="dayList"></ul>
+    <div class="section-title" style="margin-top:8px">Evening</div>
+    <ul class="habit-list" id="eveningList"></ul>
+
+    <div class="add-section">
+      <div class="emoji-picker" id="emojiPicker"></div>
+      <div class="add-form">
+        <select id="habitCategory" style="background:var(--surface);border:1px solid var(--border-bright);color:var(--text);padding:8px;font-family:'Space Mono',monospace;font-size:10px;outline:none;cursor:pointer;">
+          <option value="morning">MORNING</option>
+          <option value="day">DAY</option>
+          <option value="evening">EVENING</option>
+        </select>
+        <input class="add-input" id="habitInput" placeholder="Add a new habit..." maxlength="50" />
+        <button class="add-btn" onclick="addHabit()">ADD</button>
+      </div>
+    </div>
+
+    <div class="weekly-section">
+      <div class="section-title">This Week</div>
+      <div class="weekly-grid" id="weeklyGrid"></div>
+    </div>
+
+    <div class="footer-quote">
+      <div class="quote-text" id="quoteText"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getAuth, onAuthStateChanged,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  sendEmailVerification, GoogleAuthProvider, signInWithPopup,
+  RecaptchaVerifier, signInWithPhoneNumber, signOut as fbSignOut
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const app = initializeApp({
+  apiKey: "AIzaSyBx4yqz3xFyPST-Wmb4skK357BKRw0l1LM",
+  authDomain: "habit-tracker-c64b1.firebaseapp.com",
+  projectId: "habit-tracker-c64b1",
+  storageBucket: "habit-tracker-c64b1.firebasestorage.app",
+  messagingSenderId: "603108770741",
+  appId: "1:603108770741:web:f3f4386b97d032d5df4ffc"
+});
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser = null;
+let habits = [];
+let weeklyData = {};
+let confirmationResult = null;
+let recaptchaVerifier = null;
+let selectedEmoji = '⚡';
+let currentTab = 'login';
+let currentMethod = 'email';
+
+const EMOJIS = ['🌅','💧','🏃','🧘','📖','✍️','🥗','💊','🛌','🧠','🎯','💪','🌙','☀️','🚴','🎨','🎵','🌿'];
+const QUOTES_DEFAULT = ["SMALL ACTS\nBUILD EMPIRES","TODAY IS\nNOT OPTIONAL","EVERY DAY\nIS A CHOICE","CONSISTENCY\nIS THE ANSWER"];
+const QUOTES_DONE = ["EXCEPTIONAL.\nNOW DO IT AGAIN.","DISCIPLINE\nIS FREEDOM.","YOU SHOWED UP.\nAGAIN.","HABITS COMPLETE.\nREST WELL."];
+
+// ── Expose to window ──────────────────────────
+window.switchTab = (tab) => {
+  currentTab = tab;
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='signup')));
+  document.getElementById('emailBtn').querySelector('.btn-label').textContent = tab==='signup' ? 'CREATE ACCOUNT' : 'SIGN IN';
+  document.getElementById('confirmGroup').style.display = tab==='signup' ? 'block' : 'none';
+  clearMsg();
+};
+
+window.setMethod = (m) => {
+  currentMethod = m;
+  document.getElementById('methodEmail').classList.toggle('active', m==='email');
+  document.getElementById('methodPhone').classList.toggle('active', m==='phone');
+  document.getElementById('emailForm').style.display = m==='email' ? 'block' : 'none';
+  document.getElementById('phoneForm').style.display = m==='phone' ? 'block' : 'none';
+  clearMsg();
+  if (m==='phone' && !recaptchaVerifier) initRecaptcha();
+};
+
+window.handleEmailAuth = async () => {
+  const email = document.getElementById('emailInput').value.trim();
+  const pw = document.getElementById('passwordInput').value;
+  const cpw = document.getElementById('confirmInput').value;
+  if (!email || !pw) return showMsg('Please fill in all fields.','error');
+  if (currentTab==='signup' && pw!==cpw) return showMsg('Passwords do not match.','error');
+  if (currentTab==='signup' && pw.length<8) return showMsg('Password must be at least 8 characters.','error');
+  setBtnLoading('emailBtn',true);
+  try {
+    if (currentTab==='signup') {
+      const cred = await createUserWithEmailAndPassword(auth,email,pw);
+      await sendEmailVerification(cred.user);
+      document.getElementById('verifyEmailAddr').textContent = email;
+      showScreen('verifyEmail');
+    } else {
+      await signInWithEmailAndPassword(auth,email,pw);
+    }
+  } catch(e) { showMsg(fErr(e.code),'error'); }
+  finally { setBtnLoading('emailBtn',false); }
+};
+
+window.signInWithGoogle = async () => {
+  try {
+    const r = await signInWithPopup(auth, new GoogleAuthProvider());
+    await initUserData(r.user);
+    showScreen('app');
+  } catch(e) { if(e.code!=='auth/popup-closed-by-user') showMsg(fErr(e.code),'error'); }
+};
+
+window.sendPhoneCode = async () => {
+  const code = document.getElementById('countryCode').value;
+  const num = document.getElementById('phoneInput').value.replace(/\D/g,'');
+  if (!num || num.length < 7) return showMsg('Enter a valid phone number.','error');
+  setBtnLoading('sendCodeBtn',true);
+  try {
+    if (!recaptchaVerifier) initRecaptcha();
+    confirmationResult = await signInWithPhoneNumber(auth, code+num, recaptchaVerifier);
+    document.getElementById('phoneStep1').style.display = 'none';
+    document.getElementById('phoneStep2').style.display = 'block';
+    showMsg(`Code sent to ${code}${num}`,'info');
+    setupOTPInputs();
+  } catch(e) {
+    showMsg(fErr(e.code),'error');
+    recaptchaVerifier = null;
+    document.getElementById('recaptcha-container').innerHTML='';
+    initRecaptcha();
+  } finally { setBtnLoading('sendCodeBtn',false); }
+};
+
+window.verifyPhoneCode = async () => {
+  const code = Array.from(document.querySelectorAll('.otp-input')).map(i=>i.value).join('');
+  if (code.length!==6) return showMsg('Enter the full 6-digit code.','error');
+  setBtnLoading('verifyCodeBtn',true);
+  try {
+    const r = await confirmationResult.confirm(code);
+    await initUserData(r.user);
+    showScreen('app');
+  } catch(e) {
+    showMsg('Incorrect code. Please try again.','error');
+    document.querySelectorAll('.otp-input').forEach(i=>i.value='');
+    document.querySelectorAll('.otp-input')[0].focus();
+  } finally { setBtnLoading('verifyCodeBtn',false); }
+};
+
+window.resetPhoneStep = () => {
+  document.getElementById('phoneStep1').style.display='block';
+  document.getElementById('phoneStep2').style.display='none';
+  confirmationResult=null; clearMsg();
+};
+
+window.checkEmailVerified = async () => {
+  const btn = document.querySelector('#verifyEmailScreen .btn-primary');
+  btn.classList.add('loading'); btn.disabled=true;
+  try {
+    await auth.currentUser.reload();
+    if (auth.currentUser.emailVerified) {
+      await initUserData(auth.currentUser);
+      showScreen('app');
+    } else {
+      setVerifyMsg('Not verified yet. Check your inbox and click the link.','error');
+    }
+  } catch(e) {} finally { btn.classList.remove('loading'); btn.disabled=false; }
+};
+
+window.resendVerification = async () => {
+  try { await sendEmailVerification(auth.currentUser); setVerifyMsg('Email resent!','success'); }
+  catch(e) { setVerifyMsg('Could not resend. Try again shortly.','error'); }
+};
+
+window.backToAuth = async () => {
+  try { await fbSignOut(auth); } catch(e) {}
+  showScreen('auth');
+};
+
+window.doSignOut = async () => {
+  await fbSignOut(auth);
+  habits=[]; weeklyData={};
+  showScreen('auth');
+};
+
+window.addHabit = () => {
+  const input = document.getElementById('habitInput');
+  const name = input.value.trim();
+  if (!name) return;
+  habits.push({ id: Date.now(), name, emoji: selectedEmoji, time: document.getElementById('habitCategory').value, done: false });
+  input.value='';
+  saveData();
+  renderApp();
+};
+
+// ── Helpers ────────────────────────────────────
+function initRecaptcha() {
+  try {
+    recaptchaVerifier = new RecaptchaVerifier(auth,'recaptcha-container',{
+      size:'normal', theme:'dark',
+      callback:()=>{},
+      'expired-callback':()=>{ recaptchaVerifier=null; initRecaptcha(); }
+    });
+    recaptchaVerifier.render();
+  } catch(e) { console.warn('reCAPTCHA:',e); }
+}
+
+function setupOTPInputs() {
+  const inputs = document.querySelectorAll('.otp-input');
+  inputs.forEach((inp,i)=>{
+    inp.value='';
+    inp.oninput = e => {
+      const v = e.target.value.replace(/\D/g,'');
+      e.target.value = v.slice(-1);
+      if (v && i<inputs.length-1) inputs[i+1].focus();
+    };
+    inp.onkeydown = e => { if(e.key==='Backspace'&&!inp.value&&i>0) inputs[i-1].focus(); };
+    inp.onpaste = e => {
+      const p=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');
+      if (p.length===6) { inputs.forEach((x,j)=>x.value=p[j]||''); inputs[5].focus(); e.preventDefault(); }
+    };
+  });
+  inputs[0].focus();
+}
+
+function showScreen(name) {
+  document.getElementById('authScreen').style.display = name==='auth' ? 'flex' : 'none';
+  document.getElementById('verifyEmailScreen').classList.toggle('show', name==='verifyEmail');
+  document.getElementById('appScreen').classList.toggle('show', name==='app');
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('authMsg');
+  el.textContent=text; el.className=`auth-msg ${type} show`;
+}
+function clearMsg() { document.getElementById('authMsg').className='auth-msg'; }
+function setVerifyMsg(text,type) {
+  const el = document.getElementById('verifyMsg');
+  el.textContent=text; el.className=`auth-msg ${type} show`;
+}
+function setBtnLoading(id,v) {
+  const b=document.getElementById(id); if(!b)return;
+  b.classList.toggle('loading',v); b.disabled=v;
+}
+function fErr(code) {
+  return ({
+    'auth/user-not-found':'No account found with that email.',
+    'auth/wrong-password':'Incorrect password.',
+    'auth/invalid-credential':'Invalid email or password.',
+    'auth/email-already-in-use':'An account with this email already exists.',
+    'auth/weak-password':'Password too weak. Use at least 8 characters.',
+    'auth/invalid-phone-number':'Invalid phone number format.',
+    'auth/too-many-requests':'Too many attempts. Please wait a moment.',
+    'auth/network-request-failed':'Network error. Check your connection.',
+    'auth/invalid-verification-code':'Wrong code. Try again.',
+    'auth/code-expired':'Code expired. Request a new one.',
+    'auth/missing-phone-number':'Please enter a phone number.',
+  })[code] || `Something went wrong. (${code})`;
+}
+
+// ── Firestore ──────────────────────────────────
+function getToday() { return new Date().toISOString().split('T')[0]; }
+
+function getDefaultHabits() {
+  return [
+    {id:1,name:'Drink a glass of water',emoji:'💧',time:'morning',done:false},
+    {id:2,name:'Meditate for 10 minutes',emoji:'🧘',time:'morning',done:false},
+    {id:3,name:'Read for 30 minutes',emoji:'📖',time:'day',done:false},
+    {id:4,name:'Exercise or walk',emoji:'🏃',time:'day',done:false},
+    {id:5,name:'Journal one thought',emoji:'✍️',time:'evening',done:false},
+    {id:6,name:'No screens at 9pm',emoji:'🌙',time:'evening',done:false},
+  ];
+}
+
+async function initUserData(user) {
+  const ref = doc(db,'users',user.uid);
+  const snap = await getDoc(ref);
+  const today = getToday();
+  if (!snap.exists()) {
+    habits = getDefaultHabits(); weeklyData = {};
+    await setDoc(ref,{habits,weeklyData,lastDay:today,createdAt:new Date().toISOString()});
+  } else {
+    const d = snap.data();
+    habits = d.habits || getDefaultHabits();
+    weeklyData = d.weeklyData || {};
+    if (d.lastDay !== today) {
+      if (d.lastDay) weeklyData[d.lastDay]={done:habits.filter(h=>h.done).length,total:habits.length};
+      habits.forEach(h=>h.done=false);
+      await setDoc(ref,{habits,weeklyData,lastDay:today},{merge:true});
+    }
+  }
+  populateUserBar(user);
+}
+
+async function saveData() {
+  if (!currentUser) return;
+  const ind = document.getElementById('savingIndicator');
+  ind.classList.add('show');
+  try { await updateDoc(doc(db,'users',currentUser.uid),{habits,weeklyData}); }
+  catch(e) { await setDoc(doc(db,'users',currentUser.uid),{habits,weeklyData,lastDay:getToday()},{merge:true}); }
+  setTimeout(()=>ind.classList.remove('show'),1200);
+}
+
+// ── Auth State ─────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    currentUser = user;
+    if (user.providerData[0]?.providerId==='password' && !user.emailVerified) {
+      document.getElementById('verifyEmailAddr').textContent = user.email;
+      showScreen('verifyEmail'); return;
+    }
+    await initUserData(user);
+    showScreen('app');
+    renderEmojiPicker();
+    renderApp();
+  } else {
+    currentUser = null;
+    showScreen('auth');
+  }
+});
+
+function populateUserBar(user) {
+  const av = document.getElementById('userAvatar');
+  const nm = document.getElementById('userName');
+  av.innerHTML = user.photoURL ? `<img src="${user.photoURL}" alt="avatar">` : (user.displayName||user.email||user.phoneNumber||'?')[0].toUpperCase();
+  nm.textContent = user.displayName || user.email || user.phoneNumber || 'Signed In';
+}
+
+// ── App Render ─────────────────────────────────
+function getStreak() {
+  let s=0; const d=new Date(); d.setDate(d.getDate()-1);
+  for(let i=0;i<365;i++){
+    const k=d.toISOString().split('T')[0];
+    if(!weeklyData[k]||weeklyData[k].done<weeklyData[k].total) break;
+    s++; d.setDate(d.getDate()-1);
+  }
+  return s;
+}
+
+function renderApp() {
+  const now=new Date();
+  const DAY=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('dateDisplay').textContent=`${DAY[now.getDay()]} — ${MON[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+  document.getElementById('streakNum').textContent=getStreak();
+  const total=habits.length, done=habits.filter(h=>h.done).length;
+  document.getElementById('progressCount').textContent=`${done} / ${total}`;
+  document.getElementById('progressBar').style.width=total?`${done/total*100}%`:'0%';
+  document.getElementById('allDoneBanner').classList.toggle('visible',total>0&&done===total);
+  const allDone=total>0&&done===total;
+  const arr=allDone?QUOTES_DONE:QUOTES_DEFAULT;
+  const doy=Math.floor((now-new Date(now.getFullYear(),0,0))/(864e5));
+  const qel=document.getElementById('quoteText');
+  qel.textContent=arr[doy%arr.length]; qel.classList.toggle('complete',allDone);
+
+  ['morning','day','evening'].forEach(cat=>{
+    const list=document.getElementById(`${cat}List`); list.innerHTML='';
+    const ch=habits.filter(h=>h.time===cat);
+    ch.forEach(h=>{
+      const li=document.createElement('li');
+      li.className=`habit-item${h.done?' done':''}`;
+      li.onclick=()=>toggleHabit(h.id,li);
+      const dots=Array.from({length:7},(_,i)=>{
+        const d=new Date(); d.setDate(d.getDate()-(6-i));
+        const k=d.toISOString().split('T')[0];
+        const f=k===getToday()?h.done:(weeklyData[k]&&weeklyData[k].done>0);
+        return `<div class="streak-dot${f?' filled':''}"></div>`;
+      }).join('');
+      li.innerHTML=`
+        <div class="habit-check-area"><div class="checkmark">
+          <svg class="check-svg" width="14" height="10" viewBox="0 0 14 10" fill="none">
+            <path d="M1 5L5 9L13 1" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div></div>
+        <div class="habit-content">
+          <div class="habit-name">${h.emoji} ${h.name}</div>
+          <div class="habit-sub">${cat}</div>
+        </div>
+        <div class="habit-streak">${dots}</div>
+        <button class="delete-btn" onclick="event.stopPropagation();window.__del(${h.id})">✕</button>`;
+      list.appendChild(li);
+    });
+    if(!ch.length){const e=document.createElement('li');e.style.cssText='padding:16px 20px;font-family:Space Mono,monospace;font-size:10px;color:var(--muted);letter-spacing:1px;';e.textContent='NO HABITS YET';list.appendChild(e);}
+  });
+
+  // Weekly
+  const grid=document.getElementById('weeklyGrid'); grid.innerHTML='';
+  const WD=['S','M','T','W','T','F','S'];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const k=d.toISOString().split('T')[0], iT=i===0;
+    const data=iT?{done:habits.filter(h=>h.done).length,total:habits.length}:(weeklyData[k]||{done:0,total:habits.length});
+    let st=''; if(data.total>0){if(data.done===data.total)st='completed';else if(data.done>0)st='partial';}
+    const col=document.createElement('div'); col.className='day-col';
+    col.innerHTML=`<div class="day-label">${WD[d.getDay()]}</div><div class="day-dot${iT?' today':''}${st?' '+st:''}">${d.getDate()}</div>`;
+    grid.appendChild(col);
+  }
+}
+
+function toggleHabit(id, el) {
+  const h=habits.find(x=>x.id===id); h.done=!h.done;
+  el.classList.toggle('done'); el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'),400);
+  setTimeout(renderApp,50);
+  saveData();
+}
+
+window.__del = (id) => { habits=habits.filter(h=>h.id!==id); saveData(); renderApp(); };
+
+function renderEmojiPicker() {
+  const p=document.getElementById('emojiPicker'); p.innerHTML='';
+  EMOJIS.forEach(em=>{
+    const b=document.createElement('button');
+    b.className=`emoji-btn${em===selectedEmoji?' selected':''}`;
+    b.textContent=em;
+    b.onclick=()=>{ selectedEmoji=em; document.querySelectorAll('.emoji-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); };
+    p.appendChild(b);
+  });
+}
+
+document.getElementById('habitInput').addEventListener('keydown',e=>{if(e.key==='Enter')window.addHabit();});
+</script>
+</body>
+</html>
