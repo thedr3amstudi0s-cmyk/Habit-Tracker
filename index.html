@@ -295,7 +295,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getAuth, onAuthStateChanged,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendEmailVerification, GoogleAuthProvider, signInWithPopup,
+  sendEmailVerification, GoogleAuthProvider, signInWithRedirect, getRedirectResult,
   signOut as fbSignOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
@@ -304,7 +304,7 @@ import {
 
 const app = initializeApp({
   apiKey: "AIzaSyBx4yqz3xFyPST-Wmb4skK357BKRw0l1LM",
-  authDomain: "habit-tracker-c64b1.firebaseapp.com",
+  authDomain: "thedr3amstudi0s-cmyk.github.io",
   projectId: "habit-tracker-c64b1",
   storageBucket: "habit-tracker-c64b1.firebasestorage.app",
   messagingSenderId: "603108770741",
@@ -359,17 +359,9 @@ document.getElementById('googleBtn').addEventListener('click', async () => {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
   try {
-    const result = await signInWithPopup(auth, provider);
-    await initUserData(result.user);
-    showScreen('app');
-    renderEmojiPicker();
-    renderApp();
+    await signInWithRedirect(auth, provider);
   } catch(e) {
-    if (e.code === 'auth/popup-blocked') {
-      showMsg('Popup was blocked. Please allow popups for this site and try again.', 'error');
-    } else if (e.code !== 'auth/popup-closed-by-user') {
-      showMsg(fErr(e.code), 'error');
-    }
+    showMsg(fErr(e.code), 'error');
   }
 });
 
@@ -487,6 +479,19 @@ async function saveData() {
   catch(e) { await setDoc(doc(db,'users',currentUser.uid),{habits,weeklyData,lastDay:getToday()},{merge:true}); }
   setTimeout(()=>ind.classList.remove('show'),1200);
 }
+
+// ── Handle redirect result when landing back from Google ──
+getRedirectResult(auth).then(async result => {
+  if (result?.user) {
+    currentUser = result.user;
+    await initUserData(result.user);
+    showScreen('app');
+    renderEmojiPicker();
+    renderApp();
+  }
+}).catch(e => {
+  if (e.code) showMsg(fErr(e.code), 'error');
+});
 
 // ── Auth State ─────────────────────────────────
 onAuthStateChanged(auth, async user => {
