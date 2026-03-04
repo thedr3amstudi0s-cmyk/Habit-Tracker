@@ -19,6 +19,8 @@
   --gold: #c9924a;
   --sky: #7ba7c4;
   --cream: #f7f1e8;
+  --grey: #999999;
+  --darkgrey: #a9a9a9;
 }
 
 [data-theme="dark"] {
@@ -34,6 +36,8 @@
   --gold: #c9924a;
   --sky: #5a87a4;
   --cream: #1c1814;
+  --grey: #999999;
+  --darkgrey: #a9a9a9;
 }
 
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -73,7 +77,7 @@ body::after {
   right: 16px;
   z-index: 1000;
   background: var(--cream);
-  border: 1px solid var(--dust);
+  border: 1px solid var(--darkgrey);
   color: var(--ink3);
   width: 40px;
   height: 40px;
@@ -84,12 +88,12 @@ body::after {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  box-shadow: 2px 2px 0 var(--dust);
+  box-shadow: 2px 2px 0 var(--darkgrey);
 }
 .theme-toggle:hover {
-  border-color: var(--gold);
-  color: var(--gold);
-  box-shadow: 2px 2px 0 var(--gold);
+  border-color: var(--grey);
+  color: var(--grey);
+  box-shadow: 2px 2px 0 var(--grey);
   transform: translate(-1px, -1px);
 }
 
