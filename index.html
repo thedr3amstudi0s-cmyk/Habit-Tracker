@@ -338,10 +338,34 @@ onAuthStateChanged(auth, async user => {
       document.getElementById('verifyEmailAddr').textContent = user.email;
       showScreen('verifyEmail'); return;
     }
-    await initUserData(user);
-    showScreen('app');
-    renderEmojiPicker();
-    renderApp();
+    // Show app immediately with cached data so it feels instant
+    const cacheKey = `habit_cache_${user.uid}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const c = JSON.parse(cached);
+        habits = c.habits || getDefaultHabits();
+        weeklyData = c.weeklyData || {};
+        document.getElementById('userAvatar').textContent = (user.displayName||user.email||'?')[0].toUpperCase();
+        document.getElementById('userName').textContent = user.displayName||user.email||'Signed In';
+        showScreen('app');
+        renderEmojiPicker();
+        renderApp();
+      } catch(e) {}
+    } else {
+      // No cache yet — show app with defaults while loading
+      habits = getDefaultHabits(); weeklyData = {};
+      document.getElementById('userAvatar').textContent = (user.displayName||user.email||'?')[0].toUpperCase();
+      document.getElementById('userName').textContent = user.displayName||user.email||'Signed In';
+      showScreen('app');
+      renderEmojiPicker();
+      renderApp();
+    }
+    // Load from Firestore in background and update if different
+    initUserData(user).then(() => {
+      localStorage.setItem(cacheKey, JSON.stringify({habits, weeklyData}));
+      renderApp();
+    }).catch(()=>{});
   } else {
     currentUser = null;
     showScreen('auth');
@@ -382,6 +406,8 @@ async function initUserData(user) {
 async function saveData() {
   if (!currentUser) return;
   const ind=document.getElementById('savingIndicator'); ind.classList.add('show');
+  // Write to local cache immediately so next load is instant
+  localStorage.setItem(`habit_cache_${currentUser.uid}`, JSON.stringify({habits, weeklyData}));
   try { await updateDoc(doc(db,'users',currentUser.uid),{habits,weeklyData}); }
   catch(e) { await setDoc(doc(db,'users',currentUser.uid),{habits,weeklyData,lastDay:getToday()},{merge:true}); }
   setTimeout(()=>ind.classList.remove('show'),1200);
