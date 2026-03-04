@@ -405,11 +405,13 @@ async function initUserData(user) {
 }
 async function saveData() {
   if (!currentUser) return;
+  // Always record today's progress so streak is accurate
+  const today = getToday();
+  weeklyData[today] = { done: habits.filter(h=>h.done).length, total: habits.length };
   const ind=document.getElementById('savingIndicator'); ind.classList.add('show');
-  // Write to local cache immediately so next load is instant
   localStorage.setItem(`habit_cache_${currentUser.uid}`, JSON.stringify({habits, weeklyData}));
-  try { await updateDoc(doc(db,'users',currentUser.uid),{habits,weeklyData}); }
-  catch(e) { await setDoc(doc(db,'users',currentUser.uid),{habits,weeklyData,lastDay:getToday()},{merge:true}); }
+  try { await updateDoc(doc(db,'users',currentUser.uid),{habits,weeklyData,lastDay:today}); }
+  catch(e) { await setDoc(doc(db,'users',currentUser.uid),{habits,weeklyData,lastDay:today},{merge:true}); }
   setTimeout(()=>ind.classList.remove('show'),1200);
 }
 
@@ -426,7 +428,21 @@ function setBtnLoading(id,v){const b=document.getElementById(id);if(!b)return;b.
 function fErr(code){return({'auth/user-not-found':'No account found with that email.','auth/wrong-password':'Incorrect password.','auth/invalid-credential':'Invalid email or password.','auth/email-already-in-use':'An account with this email already exists.','auth/weak-password':'Password too weak. Use at least 8 characters.','auth/too-many-requests':'Too many attempts. Please wait a moment.','auth/network-request-failed':'Network error. Check your connection.','auth/invalid-email':'Please enter a valid email address.'})[code]||`Something went wrong. (${code})`;}
 
 // Render
-function getStreak(){let s=0;const d=new Date();d.setDate(d.getDate()-1);for(let i=0;i<365;i++){const k=d.toISOString().split('T')[0];if(!weeklyData[k]||weeklyData[k].done<weeklyData[k].total)break;s++;d.setDate(d.getDate()-1);}return s;}
+function getStreak(){
+  const today = getToday();
+  const total = habits.length;
+  const done = habits.filter(h=>h.done).length;
+  // Count today if all habits are done
+  let s = (total > 0 && done === total) ? 1 : 0;
+  // Then count backwards from yesterday
+  const d = new Date(); d.setDate(d.getDate()-1);
+  for(let i=0;i<365;i++){
+    const k=d.toISOString().split('T')[0];
+    if(!weeklyData[k]||weeklyData[k].done<weeklyData[k].total) break;
+    s++; d.setDate(d.getDate()-1);
+  }
+  return s;
+}
 
 function renderApp(){
   const now=new Date();
