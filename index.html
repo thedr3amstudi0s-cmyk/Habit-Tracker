@@ -93,6 +93,33 @@ body::after {
   transform: translate(-1px, -1px);
 }
 
+/* Settings */
+.setting-toggle {
+  position: fixed;
+  top: 16px;
+  right: 10px;
+  z-index: 1000;
+  background: var(--cream);
+  border: 1px solid var(--dust);
+  color: var(--ink3);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 2px 2px 0 var(--dust);
+}
+.setting-toggle:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 2px 2px 0 var(--gold);
+  transform: translate(-1px, -1px);
+}
+  
 /* AUTH */
 #authScreen {
   display: flex;
@@ -373,6 +400,10 @@ body::after {
 
 <!-- Dark mode toggle -->
 <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">☀️</button>
+
+<!-- Settings button -->
+
+<button class="setting-toggle" id="settingTogle" title="Open setting">☀️</button>
 
 <!-- AUTH -->
 <div id="authScreen">
