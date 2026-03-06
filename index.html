@@ -1737,11 +1737,11 @@ function getContext(){
 // Small talk handled before the knowledge base
 const SMALL_TALK=[
   {
-    keys:['how are you','how r you','how are u','hows it going','how is it going','how do you do','you doing','you ok','you good'],
+    keys:['how are you','how r you','how are u','hows it going','how is it going','how do you do','you doing','you ok','you good','hru'],
     replies:["I'm doing great, thanks for asking! I'm here whenever you need habit advice. What's on your mind?","Feeling helpful! How are YOU doing — and more importantly, how are the habits going?","All good on my end! How about you — anything habit-related I can help with today?","Ready and here for you! What habit questions can I help with?"]
   },
   {
-    keys:['hello','hi there','hey there','good morning','good evening','good afternoon','howdy','greetings','sup','what\'s up','whats up','yo ','hey ','hi '],
+    keys:['hello','hi there','hey there','good morning','good evening','good afternoon','howdy','greetings','sup','what\'s up','whats up','yo ','hey ','hi ','wsp'],
     replies:[
       ctx=>`Hey! ${ctx.streak>0?'I see you\'re on a '+ctx.streak+'-day streak — nice work. ':''}What can I help you with today?`,
       ctx=>`Hi! ${ctx.doneTodayCount>0?'You\'ve already done '+ctx.doneTodayCount+' habit'+(ctx.doneTodayCount>1?'s':'')+' today — great start. ':''}Ask me anything about habits and routines.`,
