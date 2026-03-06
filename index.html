@@ -205,6 +205,42 @@ body::after{content:'';position:fixed;inset:0;background-image:repeating-linear-
 .q-text{font-family:'Playfair Display',serif;font-size:28px;font-style:italic;color:var(--dust);line-height:1.3;transition:color .4s;white-space:pre-line;}
 .q-text.glowing{color:var(--gold);}
 
+/* CHATBOT */
+.chat-fab{position:fixed;bottom:24px;right:24px;z-index:9000;width:52px;height:52px;border-radius:50%;background:var(--ink);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:all .2s;}
+.chat-fab:hover{background:var(--gold);transform:scale(1.08);}
+.chat-fab .chat-badge{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--sage);border:2px solid var(--paper);display:none;}
+.chat-fab .chat-badge.show{display:block;}
+.chat-window{position:fixed;bottom:88px;right:24px;z-index:9000;width:340px;max-width:calc(100vw - 48px);background:var(--paper);border:1px solid var(--dust);box-shadow:6px 6px 0 var(--paper3),12px 12px 0 var(--dust);display:none;flex-direction:column;transition:background .3s;}
+.chat-window.open{display:flex;}
+.chat-header{padding:14px 16px;border-bottom:1px solid var(--dust);display:flex;align-items:center;gap:10px;}
+.chat-header-icon{font-size:18px;}
+.chat-header-title{font-family:'Playfair Display',serif;font-size:18px;font-style:italic;flex:1;}
+.chat-header-sub{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink3);letter-spacing:2px;text-transform:uppercase;}
+.chat-close{background:none;border:none;color:var(--ink3);font-size:18px;cursor:pointer;padding:0 4px;transition:color .15s;}
+.chat-close:hover{color:var(--ink);}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;max-height:380px;min-height:200px;}
+.chat-msg{max-width:88%;font-size:15px;line-height:1.55;}
+.chat-msg.bot{align-self:flex-start;}
+.chat-msg.user{align-self:flex-end;text-align:right;}
+.chat-bubble{padding:10px 14px;line-height:1.55;}
+.chat-msg.bot .chat-bubble{background:var(--cream);border:1px solid var(--dust);font-family:'Crimson Pro',serif;color:var(--ink);}
+.chat-msg.user .chat-bubble{background:var(--ink);color:var(--paper);font-family:'Crimson Pro',serif;}
+.chat-msg-time{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink3);letter-spacing:1px;margin-top:4px;}
+.chat-typing{display:flex;gap:4px;align-items:center;padding:10px 14px;background:var(--cream);border:1px solid var(--dust);align-self:flex-start;}
+.chat-typing span{width:5px;height:5px;border-radius:50%;background:var(--ink3);animation:typingDot 1.2s ease-in-out infinite;}
+.chat-typing span:nth-child(2){animation-delay:.2s;}
+.chat-typing span:nth-child(3){animation-delay:.4s;}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+.chat-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-top:1px solid var(--dust);}
+.chat-suggestion{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--dust);background:var(--paper);color:var(--ink3);padding:5px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.chat-suggestion:hover{border-color:var(--gold);color:var(--gold);}
+.chat-input-row{display:flex;gap:0;border-top:1px solid var(--dust);}
+.chat-input{flex:1;background:transparent;border:none;padding:12px 14px;font-size:15px;font-family:'Crimson Pro',serif;color:var(--ink);outline:none;}
+.chat-input::placeholder{color:var(--dust);font-style:italic;}
+.chat-send{background:var(--ink);color:var(--paper);border:none;padding:12px 16px;cursor:pointer;font-size:16px;transition:background .15s;flex-shrink:0;}
+.chat-send:hover{background:var(--gold);}
+.chat-send:disabled{opacity:.4;cursor:not-allowed;}
+
 /* INSIGHTS */
 .insight-card{background:var(--cream);border:1px solid var(--dust);padding:20px;margin-bottom:16px;}
 .insight-title{font-family:'Playfair Display',serif;font-size:20px;font-style:italic;margin-bottom:8px;}
@@ -1090,6 +1126,149 @@ function generateWeeklyReview(){
   const worst=data.reduce((a,d)=>d.done/d.total<a.done/a.total?d:a,data[0]);
   const avg=Math.round(data.reduce((a,d)=>a+d.done/d.total,0)/data.length*100);
   return`<strong>This week:</strong> ${avg}% average. Best day: ${Math.round(best.done/best.total*100)}%. Toughest: ${Math.round(worst.done/worst.total*100)}%.`;
+}
+</script>
+<!-- CHATBOT -->
+<button class="chat-fab" id="chatFab" title="Ask your habit coach">✦<div class="chat-badge" id="chatBadge"></div></button>
+
+<div class="chat-window" id="chatWindow">
+  <div class="chat-header">
+    <div class="chat-header-icon">✦</div>
+    <div>
+      <div class="chat-header-title">Habit Coach</div>
+      <div class="chat-header-sub">Powered by AI</div>
+    </div>
+    <button class="chat-close" id="chatClose">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-suggestions" id="chatSuggestions">
+    <button class="chat-suggestion" data-q="How can I build habits more efficiently?">Be more efficient</button>
+    <button class="chat-suggestion" data-q="Why do I keep skipping my habits?">Why do I skip?</button>
+    <button class="chat-suggestion" data-q="What's the best time of day for habits?">Best time of day</button>
+    <button class="chat-suggestion" data-q="How do I stay motivated?">Stay motivated</button>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chatInput" placeholder="Ask your habit coach…" maxlength="300"/>
+    <button class="chat-send" id="chatSend">➤</button>
+  </div>
+</div>
+
+<script>
+// ── CHATBOT ──
+const chatFab=document.getElementById('chatFab');
+const chatWindow=document.getElementById('chatWindow');
+const chatClose=document.getElementById('chatClose');
+const chatMessages=document.getElementById('chatMessages');
+const chatInput=document.getElementById('chatInput');
+const chatSend=document.getElementById('chatSend');
+const chatBadge=document.getElementById('chatBadge');
+
+let chatHistory=[];
+let chatOpened=false;
+
+chatFab.addEventListener('click',()=>{
+  chatWindow.classList.toggle('open');
+  if(chatWindow.classList.contains('open')){
+    chatBadge.classList.remove('show');
+    if(!chatOpened){
+      chatOpened=true;
+      addBotMessage("Hi! I'm your habit coach. I can see your current habits and progress — ask me anything about building better routines, staying consistent, or improving your results. ✦");
+    }
+    setTimeout(()=>chatInput.focus(),100);
+  }
+});
+chatClose.addEventListener('click',()=>chatWindow.classList.remove('open'));
+
+document.querySelectorAll('.chat-suggestion').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    sendChatMessage(btn.dataset.q);
+    document.getElementById('chatSuggestions').style.display='none';
+  });
+});
+
+chatSend.addEventListener('click',()=>sendChatMessage(chatInput.value.trim()));
+chatInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage(chatInput.value.trim());}});
+
+function addBotMessage(text){
+  const wrap=document.createElement('div');wrap.className='chat-msg bot';
+  const bubble=document.createElement('div');bubble.className='chat-bubble';
+  bubble.textContent=text;
+  const time=document.createElement('div');time.className='chat-msg-time';
+  const now=new Date();time.textContent=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  wrap.appendChild(bubble);wrap.appendChild(time);
+  chatMessages.appendChild(wrap);
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+  return bubble;
+}
+
+function addUserMessage(text){
+  const wrap=document.createElement('div');wrap.className='chat-msg user';
+  const bubble=document.createElement('div');bubble.className='chat-bubble';
+  bubble.textContent=text;
+  chatMessages.appendChild(wrap);wrap.appendChild(bubble);
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+
+function showTyping(){
+  const el=document.createElement('div');el.className='chat-typing';el.id='chatTyping';
+  el.innerHTML='<span></span><span></span><span></span>';
+  chatMessages.appendChild(el);chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+function hideTyping(){const el=document.getElementById('chatTyping');if(el)el.remove();}
+
+function buildHabitContext(){
+  // Give the AI real context about the user's habits and stats
+  if(typeof habits==='undefined'||!habits.length) return '';
+  const today=typeof getToday==='function'?getToday():new Date().toLocaleDateString();
+  const sc=typeof scheduledForDate==='function'?scheduledForDate(today):habits.map(h=>h.id);
+  const doneTodayCount=habits.filter(h=>h.done&&sc.includes(h.id)).length;
+  const streak=typeof getStreak==='function'?getStreak():0;
+  const cons=typeof getConsistencyScore==='function'?getConsistencyScore():null;
+
+  const habitList=habits.map(h=>{
+    const days=(h.days||[0,1,2,3,4,5,6]).length===7?'daily':h.days.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ');
+    return `- "${h.name}" (${h.time}, ${days}, ${h.done?'done today':'not done today'})`;
+  }).join('\n');
+
+  return `The user's current habits:\n${habitList}\n\nToday: ${doneTodayCount}/${sc.length} habits completed. Current streak: ${streak} days. Consistency score: ${cons!==null?cons+'%':'not enough data yet'}.`;
+}
+
+async function sendChatMessage(text){
+  if(!text) return;
+  chatInput.value='';
+  chatSend.disabled=true;
+  addUserMessage(text);
+  chatHistory.push({role:'user',content:text});
+  showTyping();
+
+  const systemPrompt=`You are a warm, knowledgeable habit coach embedded in a personal habit tracker app. You give practical, evidence-based advice about habit formation, consistency, motivation, and self-improvement. Keep responses concise (2-4 sentences unless a list is genuinely helpful). Be encouraging but honest. Use the user's actual habit data when relevant to give personalized advice.\n\n${buildHabitContext()}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:systemPrompt,
+        messages:chatHistory
+      })
+    });
+    const data=await res.json();
+    hideTyping();
+    const reply=data.content?.[0]?.text||"Sorry, I couldn't respond right now. Try again!";
+    addBotMessage(reply);
+    chatHistory.push({role:'assistant',content:reply});
+    // Keep history to last 10 turns to stay within context
+    if(chatHistory.length>20) chatHistory=chatHistory.slice(-20);
+    // Show badge if window is closed
+    if(!chatWindow.classList.contains('open')) chatBadge.classList.add('show');
+  }catch(e){
+    hideTyping();
+    addBotMessage("I'm having trouble connecting right now. Check your connection and try again.");
+  }
+  chatSend.disabled=false;
+  chatInput.focus();
 }
 </script>
 </body>
