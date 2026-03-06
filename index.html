@@ -1162,17 +1162,577 @@ const chatMessages=document.getElementById('chatMessages');
 const chatInput=document.getElementById('chatInput');
 const chatSend=document.getElementById('chatSend');
 const chatBadge=document.getElementById('chatBadge');
-
-let chatHistory=[];
 let chatOpened=false;
 
+// ── Knowledge base ──
+// Each entry has: keys (trigger words), replies (array of varied responses, picked randomly)
+// replies can be strings or functions(ctx) that return strings
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+const KB=[
+  {
+    keys:['efficient','efficiency','faster','better','improve','optimise','optimize','productive','hack','tip','tricks','advice'],
+    replies:[
+      ctx=>`Stack habits onto existing routines — attach a new habit right after something you already do automatically, like making coffee or brushing your teeth. This is called habit stacking and it's one of the most reliable techniques.${ctx.lowCons?' With your current consistency, focus on making existing habits stick before optimizing.':''}`,
+      "The single biggest efficiency move is reducing friction. Lay out your gym clothes the night before, keep your water bottle on your desk, put your book on your pillow. You want the habit to be the path of least resistance.",
+      "Two-minute rule: any habit can be started in under two minutes. Can't do a full workout? Do 2 minutes of stretching. Can't journal? Write one sentence. Starting is the hardest part — once you're moving, momentum takes over.",
+      ctx=>`Environment design beats willpower every time. Rearrange your space so your habits are obvious and easy. ${ctx.habits.length>0?`Look at your habit list — which ones have the most friction? Fix those first.`:'Add habits in the app and think about where and when each one fits into your day.'}`,
+      "Batch your habits together where possible. A 20-minute morning block covering hydration, movement, and mindfulness is easier to protect than three separate commitments scattered through the day.",
+      "Track visibly. A habit tracker you can see — like this one — creates a 'don't break the chain' effect that's surprisingly powerful. The visual streak becomes its own motivation.",
+      "The most efficient habits are ones that improve other habits. Sleep improves willpower. Exercise improves focus and mood. Hydration improves energy. Prioritize foundational habits first.",
+      ctx=>`If a habit is taking more willpower than it should, it's probably too hard or poorly timed. ${ctx.cons!==null&&ctx.cons<60?`At ${ctx.cons}% consistency, I'd redesign your 2-3 hardest habits before anything else.`:'Audit your habits — which ones feel hard? Those need to be made smaller or moved to a better time.'}`,
+    ]
+  },
+  {
+    keys:['skip','skipping','miss','missing','forget','forgot','avoid','avoiding','procrastinat','put off','keep failing','can\'t do','cant do'],
+    replies:[
+      ctx=>`Missing once is human. Missing twice is the start of a new (bad) habit — that's the rule to protect against. ${ctx.habits.length>6?'You also have quite a few habits. Too many choices often leads to avoiding all of them — try cutting to your top 3.':'The fix is never more willpower, it's better design.'}`,
+      "Ask yourself three questions when you skip: Was the habit too hard? Was it at the wrong time? Did I not have a clear trigger? Most skipping is a design problem, not a character flaw.",
+      "Try the 'never miss twice' rule. Missing once is an accident. Missing twice is the beginning of quitting. If you miss today, make it non-negotiable to do it tomorrow — even a tiny version.",
+      ctx=>`Use the app's habit chaining feature. Link a habit you keep skipping to one you never skip. The existing habit becomes the automatic trigger. ${ctx.habits.length>1?'You already have habits you could chain — look at your list.':'Add a reliable anchor habit first, then chain the new one to it.'}`,
+      "When you're about to skip, do a 5-second countdown: 5-4-3-2-1 then start. It interrupts the brain's pattern of procrastination before it takes hold. It sounds simple but the research behind it is solid.",
+      "Reduce the habit to its absolute minimum. If you keep skipping 'exercise for 30 minutes,' change it to 'put on workout clothes.' You can always do more, but you need to make starting frictionless.",
+      "Check what time your habits are set for. Afternoon habits have the lowest completion rates due to energy dips and interruptions. Moving one skipped habit to morning often instantly fixes it.",
+      "Create a 'fresh start' tomorrow. Streaks can feel daunting when broken — so reframe it: every morning is a new day, a new vote for who you're becoming. Yesterday doesn't count against you unless you let it.",
+      ctx=>`Look at your Insights tab. It shows which habits you're most likely to skip and on which days. If there's a pattern — say, always skipping on Mondays — adjust the schedule for that habit rather than fighting the pattern.${ctx.cons!==null?` Your consistency is ${ctx.cons}% overall.`:''}`,
+    ]
+  },
+  {
+    keys:['motivat','inspire','inspired','drive','driven','enthusiasm','excited','keep going','give up','quit','unmotivated','no motivation','lost motivation','struggling','hard','difficult'],
+    replies:[
+      ctx=>`Motivation follows action — it doesn't precede it. You don't wait until you feel like doing something, you do it and then feel motivated. ${ctx.streak>3?`You already proved this — you've been going ${ctx.streak} days. You didn't feel motivated every one of those days.`:'Start with the smallest possible version of one habit today, right now.'}`,
+      "The problem isn't motivation — it's that the habit feels too big. Break it in half. Then break it in half again. 'Read for 30 minutes' becomes 'read one paragraph.' You can always do more once you've started.",
+      "Build identity, not just habits. Instead of 'I want to work out more,' tell yourself 'I'm becoming someone who moves their body every day.' That identity shift changes how you approach the habit — it becomes who you are, not what you do.",
+      ctx=>`Make your environment do the motivating for you. Put your water bottle where you'll see it first. Set your running shoes by the door. Remove the friction between you and the habit. ${ctx.habits.some(h=>!h.done)?' What habit could you make harder to avoid right now?':''}`,
+      "Motivation is a feeling, and feelings are temporary. Systems are permanent. Design a system that works even on the days you feel awful — that's the whole point of a habit tracker.",
+      "Find your 'why' one level deeper. Not 'I want to exercise' but 'I want energy to play with my kids.' Not 'I want to read' but 'I want to keep my mind sharp as I age.' Deep whys survive rough days.",
+      "Use temptation bundling: only do something you enjoy (a podcast, a show, a coffee) while doing your habit. Suddenly the habit becomes the thing you look forward to.",
+      ctx=>`Check your streak: ${ctx.streak>0?`you're at ${ctx.streak} days — that itself is motivation. Don't break something you've already built.`:'A streak of even 3 days creates real momentum. Do one habit today to start it.'}`,
+      "On your worst days, commit to 1% of the habit. 1 pushup. 1 sentence. 1 minute of meditation. Your identity as 'someone who shows up every day' is worth more than any single performance.",
+    ]
+  },
+  {
+    keys:['streak','streaks','consecutive','days in a row','in a row','chain','maintain','keep it up'],
+    replies:[
+      ctx=>ctx.streak===0?"Your streak starts the moment you complete one habit today. Just one. It doesn't matter what happened before — the counter starts now.":
+        ctx.streak<7?`You're ${ctx.streak} days in — the beginning is always the hardest. The first 2 weeks are critical. Don't break the chain. If life gets busy, do the smallest possible version rather than skipping.`:
+        ctx.streak<21?`${ctx.streak} days is where habits start to feel more natural. Research puts the average habit automation time at 66 days, so you're in the building phase. Protect this.`:
+        ctx.streak<66?`${ctx.streak} days — you're in the zone where neural pathways are genuinely forming. This is where it starts to feel wrong NOT to do your habits. Keep going.`:
+        `${ctx.streak} days is truly exceptional. Your habits are likely automatic now. The question shifts from 'how do I keep going' to 'what should I add or upgrade next.'`,
+      "The 'don't break the chain' method works because streaks make future behavior feel tied to past behavior. You're not just doing a habit — you're protecting something you've built.",
+      "If you break a streak, the most important thing is your response. Don't spiral. Don't catastrophize. Just restart immediately. The gap between missing once and quitting is entirely mental.",
+      ctx=>`Protect your streak with a 'minimum viable habit.' On crazy days, just do 1 rep, 1 sip, 1 line. The streak matters more than the quality on bad days. ${ctx.streak>0?`You've got ${ctx.streak} days to protect — worth fighting for.`:''}`,
+      "Some people find it helpful to have a 'wildcard' — one skip allowed per month that doesn't break the streak. It removes the all-or-nothing pressure that causes people to give up entirely after missing once.",
+      "The science behind streaks: each completed habit releases a small dopamine hit. Over time your brain starts associating the habit with reward, which makes the pull toward it stronger. You're literally rewiring yourself.",
+    ]
+  },
+  {
+    keys:['time','morning','evening','night','afternoon','when','schedule','best time','wake up','wakeup','early','late','routine','daily routine'],
+    replies:[
+      ctx=>{
+        const morning=ctx.habits.filter(h=>h.time==='morning').length;
+        const evening=ctx.habits.filter(h=>h.time==='evening').length;
+        const day=ctx.habits.filter(h=>h.time==='day').length;
+        let r="Morning habits have the highest success rates — willpower is at its peak and the day hasn't had a chance to derail you yet. Evening is great for reflection habits. Afternoon is hardest due to energy dips.";
+        if(morning===0) r+=" You have no morning habits — consider moving at least one there.";
+        if(evening>morning+2) r+=" You're heavily evening-weighted, which is risky since evenings often get stolen by life. Try shifting one to morning.";
+        return r;
+      },
+      "There's no universally 'best' time — but there is a best time for you. Track which habits you complete most reliably and notice the pattern. The time that works is the right time.",
+      "Morning routines are powerful because they create momentum. Win the morning and you're more likely to win the afternoon. Even a 10-minute morning habit block sets the tone for the whole day.",
+      "Night owls shouldn't force morning habits. If you genuinely function better later, schedule habits for your peak hours. Consistency matters more than clock time — a habit done at midnight every day beats one done at 6am half the time.",
+      "Try 'habit anchoring.' Pick a time you always do something — wake up, lunch, commute — and attach a new habit immediately before or after. You're not creating a new slot, you're using an existing one.",
+      "The worst time for habits is 'sometime today.' Without a specific time trigger, it's easy to delay indefinitely. Even if you pick a rough window like 'right after breakfast,' that specificity doubles your success rate.",
+      ctx=>`Consider the nature of each habit. Physical habits (exercise, stretching) are often best in morning when cortisol is naturally high. Mental habits (reading, learning) can work well in midday. Reflection habits (journaling, gratitude) shine at night. ${ctx.habits.length>0?'Look at your habit list — are they in the right time slots?':''}`,
+    ]
+  },
+  {
+    keys:['sleep','rest','tired','fatigue','energy','exhausted','insomnia','cant sleep','can\'t sleep','nap','naptime','bed','bedtime'],
+    replies:[
+      "Sleep is the master habit — it affects every other habit. Poor sleep destroys willpower, focus, mood, and physical recovery. If you can only build one foundation habit, a consistent sleep schedule is it.",
+      "Consistent wake time is more powerful than consistent bed time. Your body clock anchors to when you wake up, not when you go to sleep. Pick a wake time and hold it even on weekends for 2 weeks — your sleep quality will transform.",
+      "A 20-minute wind-down routine before bed signals your nervous system that sleep is coming. No screens, dim lights, same sequence every night. The routine itself becomes the sleep trigger.",
+      "The sleep-habit feedback loop is real: better sleep → more willpower → better habit completion → sense of accomplishment → less stress → better sleep. Getting sleep right unlocks everything else.",
+      "If you struggle to fall asleep, try the 4-7-8 breathing technique: inhale for 4 counts, hold for 7, exhale for 8. It activates the parasympathetic nervous system and can reduce time-to-sleep significantly.",
+      "Afternoon naps of 10-20 minutes (not longer, or you enter deep sleep and wake groggy) can restore afternoon energy and willpower. Some of the highest-performing people in history were nappers.",
+      "One sleep habit that pays outsized dividends: no phone for the first 30 minutes after waking. Your brain is in a highly suggestible state on waking — fill it with your own intentions before the world fills it for you.",
+    ]
+  },
+  {
+    keys:['exercise','workout','gym','walk','run','running','fitness','sport','jog','jogging','lift','lifting','strength','cardio','yoga','stretch','stretching','active','activity','move','moving'],
+    replies:[
+      ctx=>{
+        const hasEx=ctx.habits.some(h=>/exercise|walk|run|gym|workout|fitness|yoga|lift|sport|jog|stretch/i.test(h.name));
+        return hasEx?
+          "You already have exercise in your habits — great call. The biggest lever now is consistency over intensity. Three moderate sessions done reliably every week beats an intense program you burn out on after two weeks.":
+          "Exercise is the highest-ROI habit you can build. It improves mood, focus, sleep, energy, and cognitive function simultaneously. Start embarrassingly small — a 10-minute walk counts. Add it and protect that time.";
+      },
+      "The exercise habit is easiest to maintain when it's non-negotiable. Not 'I'll work out if I have time' but 'I work out at 7am, full stop.' Schedule it like a meeting you can't cancel.",
+      "Exercise 'snacks' are underrated — 5-10 minute bursts of movement throughout the day. A walk at lunch, stretching between tasks, 10 pushups before a shower. These add up and keep your body and brain primed.",
+      "The hardest part of exercise is showing up, not the exercise itself. Make showing up the habit, not the workout. 'Go to the gym' is the habit. What you do there is secondary, especially at first.",
+      "Exercise timing matters for some people: morning workouts use stored energy and set alertness for the day. Evening workouts use accumulated stress as fuel. Both work — pick the one you'll actually do.",
+      "Recovery is part of the exercise habit. Rest days, sleep, hydration, and protein all determine whether your effort compounds or breaks down. Don't skip rest days and call it dedication — it's counterproductive.",
+      "Walking is one of the most undervalued exercises. 30 minutes of walking daily has measurable effects on cardiovascular health, mental health, and longevity — comparable to more intense exercise for many health markers.",
+    ]
+  },
+  {
+    keys:['meditat','mindful','mindfulness','breath','breathing','calm','stress','anxious','anxiety','mental health','mental','peace','peaceful','focus','concentrate','concentration','attention','distract','distracted'],
+    replies:[
+      "Even 5 minutes of meditation daily has measurable effects on stress, focus, and emotional regulation after just a few weeks. Consistency matters far more than duration — 5 minutes every day beats 30 minutes twice a week.",
+      "Start with just breath awareness. Sit comfortably, close your eyes, notice your breath. When your mind wanders (it will), gently return to the breath. That's it. That's meditation. The wandering and returning is the exercise.",
+      "The biggest misconception about meditation is that the goal is to empty your mind. It isn't. The goal is to notice when your mind has wandered and bring it back. Each time you do that, you're building the 'attention muscle.'",
+      "For stress and anxiety, box breathing is fast and effective: inhale for 4 counts, hold for 4, exhale for 4, hold for 4. Repeat 4 times. It activates the calming parasympathetic nervous system within minutes.",
+      "Mindfulness doesn't have to be formal meditation. A mindful walk — fully present, phone away — or mindful eating (actually tasting your food) builds the same attention skills and can be easier to stick to.",
+      "The best time to meditate is the hardest time to find — early morning before the world demands your attention. Even 3 minutes right after waking, before checking your phone, creates a buffer between stimulus and reaction.",
+      "Apps like Headspace or Calm are great training wheels, but you don't need them forever. Eventually, just sitting quietly with a timer is all you need. Start with guided, graduate to unguided.",
+    ]
+  },
+  {
+    keys:['water','hydrat','hydration','drink','thirst','thirsty','fluid'],
+    replies:[
+      "Start every morning with a full glass of water before coffee or tea. Overnight you lose significant fluid through breathing and sweat — rehydrating first thing improves alertness, metabolism, and kidney function.",
+      "Visible water bottle = more water drunk. It's that simple. Keep one on your desk, by your bed, in your bag. You drink what you see. The habit is environmental, not volitional.",
+      "A simple hydration rule: your urine should be pale yellow. Dark yellow means you're behind. Clear means you're ahead. Your body tells you everything you need to know.",
+      "If you struggle to drink enough water, try habit stacking: drink a glass every time you sit down at your desk, every time you check your phone, or every time you complete a task. You'll hit your daily goal without thinking about it.",
+      "Dehydration — even mild, at 1-2% — noticeably impairs cognitive performance, mood, and energy. Before reaching for coffee or wondering why you feel foggy, drink a glass of water first.",
+      "Flavor your water if plain water feels boring — lemon, cucumber, mint, or berries make it more appealing with no downside. The habit is more sustainable when you actually enjoy it.",
+    ]
+  },
+  {
+    keys:['read','reading','book','books','learn','learning','study','studying','knowledge','educat','listen','audiobook','podcast'],
+    replies:[
+      "Reading consistently is easier with a fixed time and place — the same chair, same light, same time every day. Location cues are powerful triggers. Make one spot your 'reading spot.'",
+      "10 pages a day = 15-20 books a year. It sounds modest but almost nobody does it. Consistency at a sustainable rate beats sporadic reading binges that fizzle out.",
+      "If you struggle to sit and read, try audiobooks for commutes, chores, or walks. The knowledge compounds the same way. The goal is input, not format.",
+      "The Feynman technique for learning: after reading something, explain it simply as if to a child. Where you struggle to explain, you've found gaps in your understanding. Fill those gaps. This transforms passive reading into active learning.",
+      "Keep your current book visible — on your desk, pillow, or nightstand. Visual cues are triggers. 'Out of sight, out of mind' is devastatingly true for reading habits.",
+      "Read in the morning before screens if possible. Fresh eyes and a mind not yet overwhelmed by email and social media absorb information better and retain it longer.",
+      "Don't finish books you're not enjoying. Life is too short and there are too many good books. Give any book 50 pages; if it's not working for you, move on. Reading should feel like a gift, not an obligation.",
+    ]
+  },
+  {
+    keys:['journal','journaling','write','writing','reflect','reflection','gratitude','grateful','diary','thoughts','thinking','process'],
+    replies:[
+      "The most sustainable journaling habit uses specific prompts, not blank pages. Try: 'One thing I'm grateful for,' 'One thing that challenged me today,' 'One thing I'd do differently.' Three prompts, five minutes.",
+      "Morning pages — three pages of stream-of-consciousness writing first thing — is one of the most powerful creative and clarity habits. It clears mental clutter before the day starts.",
+      "Gratitude journaling has strong research support. Writing down 3 specific things you're grateful for (different ones each day) measurably improves wellbeing, sleep quality, and even physical health over 6-8 weeks.",
+      "Don't confuse journaling with venting. Venting without analysis can reinforce negative patterns. Effective journaling includes reflection: 'Why did this happen? What can I control? What did I learn?'",
+      "Keep your journal accessible — on your desk, by your bed, in your bag. The friction of finding it is enough to kill the habit on tired days. One dedicated, visible spot.",
+      "If you hate writing, try voice journaling — record a 2-minute voice note on your phone. Same reflective benefits, lower friction. The format doesn't matter; the reflection does.",
+      "Weekly reviews are more valuable than daily entries for many people. Every Sunday, 10 minutes: What went well? What didn't? What do I want to focus on next week? Simple, structured, powerful.",
+    ]
+  },
+  {
+    keys:['chain','link','stack','connect','trigger','cue','attach','anchor','sequence','routine'],
+    replies:[
+      "Habit stacking formula: 'After I [CURRENT HABIT], I will [NEW HABIT].' The existing habit serves as the trigger. Example: 'After I pour my morning coffee, I will write in my journal for 5 minutes.'",
+      "You can set up habit chains in this app using the 'Unlocks after' feature when adding a habit. A locked habit won't become available until its prerequisite is done — it's a built-in accountability system.",
+      "The best anchor habits are things you do automatically every day without thinking: brushing teeth, making coffee, sitting at your desk, eating lunch. Those are prime real estate for stacking new habits.",
+      "Implementation intentions double habit completion rates. Instead of 'I'll exercise more,' say 'I will exercise at 7am on Monday, Wednesday, and Friday in my living room.' Specific time + place = automatic trigger.",
+      "Consider 'if-then' planning for variable situations: 'If I'm too tired for a full workout, then I'll at least do 10 minutes of stretching.' This pre-programs a response to your most common excuse.",
+      "Build habit sequences, not just stacks. A morning sequence of: wake → water → stretch → meditate → journal creates a 20-minute routine that feels like one thing, not five. The sequence has its own momentum.",
+    ]
+  },
+  {
+    keys:['consist','consistency','regular','regularly','reliable','reliable','discipline','disciplin','willpower','self-control','control'],
+    replies:[
+      ctx=>ctx.cons===null?
+        "Consistency is built by lowering the bar, not raising willpower. Make each habit so small it's almost embarrassing — then do it every day without exception. The identity of 'someone who shows up daily' is more valuable than any single performance.":
+        ctx.cons<50?`Your consistency score is ${ctx.cons}%. The most effective fix is to cut your habits in half — keep only the most important ones — and focus entirely on those until you're consistently above 70%.`:
+        ctx.cons<80?`You're at ${ctx.cons}% consistency — that's a solid foundation. The jump to 90%+ usually comes from identifying your 1-2 most commonly skipped habits and redesigning just those.`:
+        `${ctx.cons}% is genuinely excellent. At this level, shift focus to habit quality: are they actually serving your goals, or have some become mindless boxes to tick?`,
+      "Willpower is a depletable resource — it runs low by afternoon. That's why systems and environments are more reliable than willpower. Design your day so you don't need willpower to do your habits.",
+      "The most consistent people aren't more disciplined — they've made their habits easier. They've removed the decision-making, set up the environment, and made the default choice the right choice.",
+      "Track your habits visibly (which you're doing here). Seeing an unbroken chain of checkmarks creates a 'loss aversion' effect — you don't want to be the one who breaks it. Visual tracking is a powerful consistency tool.",
+      "Consistency across weeks matters more than perfection within any week. A person who does 80% of their habits every week for a year will accomplish more than someone who does 100% for 3 weeks then quits.",
+      "Never miss twice. That's the consistency rule. One miss is an accident. Two is a pattern. If you miss today, make tomorrow non-negotiable.",
+    ]
+  },
+  {
+    keys:['goal','goals','purpose','why','reason','meaningful','meaning','intention','intend','target','aim','ambition','dream'],
+    replies:[
+      "Habits stick best when tied to identity, not outcomes. Instead of 'I want to lose weight,' try 'I'm becoming someone who takes care of their body.' Each habit is a vote for that identity.",
+      "Work backwards from your goal: who is the person who has already achieved it? What do they do every day? Those daily actions are your habits. You're not chasing the outcome — you're becoming the person.",
+      "Goals are the destination; habits are the vehicle. Without a system of habits, goals are just wishes. With habits, goals become inevitable over time.",
+      "Make your goals specific enough to be measurable. 'Get healthy' is a wish. 'Complete 30 minutes of movement 5 days a week' is a habit that leads to health. Vague goals produce vague habits.",
+      "Short-term and long-term goals need different habits. Long-term: identity-building, sustainable habits done consistently. Short-term: specific actions with deadlines. Both matter, but don't sacrifice long-term habits for short-term hustle.",
+      "Revisit your 'why' regularly, especially when motivation dips. Write it somewhere visible. The reason behind the habit is the fuel that keeps it running on hard days.",
+    ]
+  },
+  {
+    keys:['reward','celebrate','treat','incentive','reinforce','positive','reinforce','dopamine','feel good'],
+    replies:[
+      "Immediate rewards are critical in the early stages because the real payoff (fitness, knowledge, calm) is weeks away. Right after a habit, do something that feels good immediately — a moment of pride, a treat, a tick mark. That immediate signal trains the brain.",
+      "The 'victory lap' technique: after completing a habit, take 5 seconds to feel genuinely proud of yourself. Say 'yes' out loud, pump a fist, smile at yourself. It sounds silly but it builds a positive emotional association.",
+      "Temptation bundling: only allow yourself a specific pleasure while doing a habit. Only listen to your favorite podcast while exercising. Only drink your nice coffee while journaling. The habit becomes the access key to the reward.",
+      "Don't wait for big milestones to celebrate. Celebrate the tiny wins — the first day, the first week, every consistent week. Positive reinforcement at every step keeps the motivation loop running.",
+      "Be careful with food rewards for health habits — it can create counterproductive associations. Instead, use non-food rewards: new book, new gear, a relaxing bath, extra screen time. Match reward to effort.",
+      "The reward should come from the habit itself eventually. Early on, external rewards help. But design habits so that over time, the habit itself is rewarding — reading feels good, exercise feels good, journaling brings clarity.",
+    ]
+  },
+  {
+    keys:['how many','number of habits','how much','count','add more','new habit','too many','overwhelm','overwhelmed','lot of habits','many habits','reduce','cut','fewer','less habits'],
+    replies:[
+      ctx=>ctx.habits.length===0?
+        "Start with just one habit. Seriously — one. Pick the habit with the most positive ripple effects on your life and do only that for 30 days. Consistency with one habit beats inconsistency with ten.":
+        ctx.cons!==null&&ctx.cons<60?`With ${ctx.habits.length} habits and ${ctx.cons}% consistency, don't add anything new right now. Master what you have first — get above 70% consistency — then layer in something new.`:
+        `You have ${ctx.habits.length} habits. Research suggests most people can reliably build 1-3 new habits at a time. Only add more once existing habits feel automatic, which typically takes 60+ days.`,
+      "The research on habit capacity is clear: the more habits you try to build simultaneously, the lower your success rate for each one. Quality over quantity — master a few, then expand.",
+      "A useful audit: look at each of your habits and ask 'if I could only keep 3, which would they be?' Those are your core habits. Everything else is secondary and should only be added once those three are solid.",
+      "Habit overwhelm is real. When we have too many things to do, the brain treats them all as threats and we end up avoiding everything. Ruthlessly prioritize. Less is more — especially at the start.",
+    ]
+  },
+  {
+    keys:['progress','track','tracking','data','stats','insight','insightful','pattern','analytics','numbers','metrics','score','percentage'],
+    replies:[
+      ctx=>{
+        const parts=[];
+        if(ctx.streak>0) parts.push(`${ctx.streak}-day streak`);
+        if(ctx.cons!==null) parts.push(`${ctx.cons}% consistency (last 30 days)`);
+        if(ctx.doneTodayCount>0) parts.push(`${ctx.doneTodayCount}/${ctx.total} habits done today`);
+        return parts.length?
+          `Your current stats: ${parts.join(', ')}. Head to the Insights tab for per-habit completion rates, skip patterns, and mood correlations. The more you log, the more actionable those become.`:
+          "Head to the Insights tab — it tracks habit completion rates, skip patterns, mood correlations, and weekly reviews. Start logging and within a week you'll have real data to work with.";
+      },
+      "The most valuable insight is your skip pattern. If you consistently miss one habit on specific days, that's not a willpower problem — it's a scheduling problem. Use the Insights tab to spot those patterns.",
+      "Consistency percentage is more meaningful than streaks. A 75% consistency score over 30 days — doing a habit most days — builds more long-term change than a 10-day perfect streak followed by a crash.",
+      "Mood tracking + habit data together reveal something powerful: which habits most reliably improve how you feel. When you see the correlation clearly, motivation becomes almost automatic.",
+      "After 30 days of tracking, look at your data and ask: which 20% of habits are producing 80% of my positive feelings? Double down on those. This is the Pareto principle applied to personal development.",
+    ]
+  },
+  {
+    keys:['diet','eat','eating','food','nutrition','healthy eating','meal','snack','sugar','junk','vegetable','fruit','protein','calorie','weight','lose weight','gain weight','body'],
+    replies:[
+      "The most sustainable nutrition habit is food environment design — don't rely on willpower, rely on what's in your kitchen. If healthy food is easy to reach and junk food requires effort, you'll eat better without thinking about it.",
+      "Start with addition, not subtraction. Instead of 'stop eating junk food,' try 'add one vegetable to every meal.' When you crowd out bad habits with good ones, change is less painful and more sustainable.",
+      "Meal prepping once a week is a keystone habit — it makes healthy eating the path of least resistance for the entire week. Even just preparing ingredients (not full meals) cuts your decision fatigue dramatically.",
+      "Eating slowly and without screens is one of the highest-impact nutrition habits. You eat less, enjoy food more, and feel fuller sooner — all from just slowing down.",
+      "Protein at every meal is a simple rule that reduces cravings, stabilizes energy, and supports body composition without complex tracking. Eggs, yogurt, chicken, fish, legumes — just aim for some protein in every meal.",
+      "Your gut microbiome thrives on variety and fiber. The simple target of 30 different plant-based foods per week (including spices and herbs) has dramatic effects on gut health, immunity, and even mood.",
+    ]
+  },
+  {
+    keys:['phone','screen','social media','instagram','tiktok','twitter','facebook','scroll','scrolling','doom scroll','distraction','digital','internet','online','app','apps','notification','notif'],
+    replies:[
+      "Screen habits are the most powerful disruptors of every other habit. Phones trigger dopamine loops that hijack the same reward systems your habits need. Creating phone-free windows — especially morning and pre-sleep — protects your habits.",
+      "Try a phone 'charging station' outside your bedroom. The single habit of not having your phone in bed improves sleep quality, morning focus, and reduces doomscrolling — all in one move.",
+      "Turn off all non-essential notifications. Each notification interrupts a focus state that takes 23 minutes on average to fully recover. You're being interrupted constantly and paying an enormous cognitive tax.",
+      "Social media use feels like rest but it isn't — it's passive consumption that leaves you more mentally fatigued than before. True rest is: sleep, nature walks, conversation, reading physical books.",
+      "The '20-20-20 rule' for screens: every 20 minutes, look at something 20 feet away for 20 seconds. It reduces eye strain and also serves as a micro-reset that interrupts compulsive scrolling.",
+      "Try 'app timers' — set a 30-minute daily limit on your most distracting apps. When the limit hits, you have to actively choose to extend it. That friction is enough to break mindless usage for most people.",
+    ]
+  },
+  {
+    keys:['morning routine','morning habits','wake up routine','start the day','sunrise','begin the day'],
+    replies:[
+      "A powerful morning routine doesn't need to be long — even 15 minutes of intentional time before the world demands your attention sets the tone for the entire day. Water, movement, one clear intention.",
+      "The first 30 minutes after waking are uniquely valuable. Your mind is in a relaxed, suggestible alpha brain wave state. Fill it with your own intentions before filling it with email, news, or social media.",
+      "Sequence matters in morning routines. A useful order: hydrate → move (even briefly) → reflect or plan → then screens. This order primes your body and mind before reactive tasks.",
+      "Don't build a morning routine that requires perfect conditions. If it only works when you wake up at 6am with 3 free hours, it'll fail most days. Design for your worst-case morning and it'll survive your best ones too.",
+      "The night before determines the morning. Laying out clothes, prepping breakfast, writing tomorrow's top 3 tasks — these 10 minutes the night before make morning routines far more likely to happen.",
+      ctx=>`You currently have ${ctx.habits.filter(h=>h.time==='morning').length} morning habits. ${ctx.habits.filter(h=>h.time==='morning').length===0?'Consider adding at least one anchor morning habit — it creates momentum for the whole day.':ctx.habits.filter(h=>h.time==='morning').length>4?'That\'s quite a few morning habits — make sure your morning block is realistic. An overloaded morning routine often collapses entirely.':'That\'s a good foundation for a morning routine.'}`,
+    ]
+  },
+  {
+    keys:['evening routine','night routine','bedtime routine','wind down','end of day','before bed','nighttime'],
+    replies:[
+      "An evening routine serves two purposes: it helps you wind down for better sleep, and it sets up tomorrow for success. Both are high-value habits.",
+      "The most impactful evening habit: write down your top 3 priorities for tomorrow before bed. Your brain continues processing them during sleep and you wake up with direction rather than anxiety.",
+      "Blue light from screens suppresses melatonin production and pushes your sleep onset later. An hour before bed, switch to warm lighting, dim your phone, or use blue-light blocking glasses. Small change, big sleep improvement.",
+      "A 'shutdown ritual' — a consistent sequence that ends your work day — tells your brain it's safe to stop problem-solving. Without it, work thoughts intrude on evenings and sleep. Even just closing your laptop and saying 'shutdown complete' works.",
+      "Evening is the best time for reflection habits: gratitude journaling, reviewing the day, reading. These are low-energy activities that still produce high value and ease the transition to sleep.",
+      "Avoid intense exercise within 2-3 hours of bed — it raises cortisol and body temperature, both of which delay sleep. Morning or early afternoon exercise improves sleep; late-night exercise often disrupts it.",
+    ]
+  },
+  {
+    keys:['fail','failure','failed','mess up','messed up','mistake','mistakes','wrong','went wrong','bad day','rough day','bad week','rough week','setback','back on track'],
+    replies:[
+      "Failure is data, not identity. When a habit fails, get curious: what specifically made it fail? Time? Energy? Circumstances? That information tells you exactly what to redesign. Failure without analysis is wasted.",
+      "The gap between 'I failed' and 'I quit' is entirely in your head. Missing a habit — even many times — doesn't mean you've failed. You've only failed if you stop trying. Restart as many times as you need to.",
+      "Self-compassion is not weakness — it's actually the thing that makes you more resilient. Studies show that people who respond to setbacks with self-compassion (rather than self-criticism) are more likely to try again and succeed.",
+      "After a setback, ask: 'What would a good coach tell me right now?' Usually not 'you're terrible and should give up.' Usually 'okay, what happened, what do we adjust, how do we get back on track?'",
+      "Bad days don't need to become bad weeks. The rule: never let a bad day cause you to miss the next day. Tomorrow is always a fresh start — use it.",
+      ctx=>`Use the Recovery Mode feature in this app — it acknowledges when you've missed a day but shows up again. That recognition matters. ${ctx.streak===0?'Your streak can restart today — right now, with one habit.':'You\'re still in the game.'}`,
+    ]
+  },
+  {
+    keys:['habit science','habit loop','science','research','psychology','brain','neuroscience','how habits work','why habits','habit formation','66 days','21 days'],
+    replies:[
+      "The habit loop has three components: cue (trigger), routine (the habit itself), and reward. Understanding which part is breaking down helps you fix it precisely. Most habit failures are a cue problem or a reward problem, not a routine problem.",
+      "The '21 days to form a habit' myth comes from a misreading of a 1960 self-help book. The actual research (Phillippa Lally, UCL, 2010) found it takes 18-254 days, with an average of 66 days. Simple habits automate faster; complex ones take longer.",
+      "Habits are stored in the basal ganglia, a different part of the brain than conscious thought. Once fully formed, habits run without your prefrontal cortex's involvement — that's why they feel 'automatic.'",
+      "Neuroplasticity means your brain physically changes with habit practice. Neural pathways strengthen with repetition and weaken with disuse. Every time you do a habit, you're literally sculpting your brain.",
+      "Implementation intentions — making an 'if-then' plan before starting a habit — have been shown in dozens of studies to roughly double completion rates. 'If it's 7am, then I will meditate for 5 minutes' is far more powerful than just 'I'll meditate.'",
+      "Reward prediction error is the neuroscience behind habits: your brain releases dopamine not just when you get a reward, but when it predicts one is coming. This is why the anticipation of completing a habit can itself become motivating over time.",
+    ]
+  },
+  {
+    keys:['work','career','job','productive','productivity','focus','deep work','concentration','task','todo','to-do','plan','planning','priority','priorities','time management'],
+    replies:[
+      "Productivity is a habit, not a trait. The most productive people have systems — specific times for specific types of work — rather than relying on motivation or mood to determine what they do.",
+      "Deep work (focused, uninterrupted work on cognitively demanding tasks) is the highest-value professional habit. Protect at least 90 minutes of uninterrupted time every day — guard it like a meeting with your most important client.",
+      "Time blocking — assigning specific tasks to specific time blocks — is more effective than to-do lists because it forces you to be realistic about what actually fits in a day.",
+      "The MIT method (Most Important Tasks): every morning, identify your 3 most important tasks. Do at least one before checking email or attending meetings. This ensures your highest-leverage work doesn't get crowded out by reactive tasks.",
+      "End each workday with a 'next action' for each ongoing project. When you return to work, you don't spend time figuring out what to do — you just do it. This captures momentum from one day to the next.",
+      "Regular breaks improve sustained focus, not reduce it. The Pomodoro technique — 25 minutes focused work, 5 minutes rest — works because it works with your brain's natural attention rhythms rather than against them.",
+    ]
+  },
+  {
+    keys:['relationship','friend','friends','family','social','connect','connection','lonely','loneliness','people','community','belong','partner','love'],
+    replies:[
+      "Social connection is one of the most powerful predictors of health, happiness, and longevity — yet it's the habit most people neglect. Scheduling regular time with people you care about isn't optional, it's foundational.",
+      "Relationships don't maintain themselves — they require consistent small deposits of time and attention. A 'relationship habit' of texting one friend to check in, or scheduling a monthly coffee, compounds enormously over years.",
+      "Loneliness and isolation undermine almost every other habit. When we feel disconnected, willpower, motivation, and mood all suffer. Prioritizing even one meaningful social interaction a day has measurable effects.",
+      "The most meaningful relationship habit isn't grand gestures — it's showing up consistently. Remembering birthdays, following up on things people mentioned, being present when you're with someone. Small consistent acts build deep bonds.",
+    ]
+  },
+  {
+    keys:['breath','breathing','breathwork','oxygen','lung','lungs','inhale','exhale','nostril','pranayama','wim hof'],
+    replies:[
+      "Intentional breathing is the fastest way to shift your physiological state — more accessible than meditation and effective in seconds. Box breathing, 4-7-8 breathing, and the physiological sigh all have strong evidence behind them.",
+      "The physiological sigh (double inhale through the nose, long exhale through the mouth) is the fastest known way to reduce acute stress. Your body does this naturally when distressed — doing it intentionally resets your nervous system within 1-2 breaths.",
+      "Nasal breathing during exercise has been shown to improve endurance, reduce breathlessness, and better oxygenate the blood compared to mouth breathing. It's harder at first but your body adapts within a few weeks.",
+      "Wim Hof breathing (30-40 deep breaths followed by breath retention) has demonstrated measurable effects on immune response, stress tolerance, and energy in clinical studies. It's a more advanced practice but powerful for those who commit to it.",
+    ]
+  },
+  {
+    keys:['money','finance','saving','spend','spending','budget','financial','invest','investment','wealth','debt','bills','frugal'],
+    replies:[
+      "Financial habits follow the same principles as physical habits: automate them so they don't require willpower. Automatic savings transfers, automatic investment contributions, and automatic bill payments remove the friction that causes most financial habit failures.",
+      "The most powerful financial habit is paying yourself first: automatically transfer a percentage of every paycheck to savings before you have a chance to spend it. Even 5% to start creates the habit and compounds significantly over time.",
+      "Track spending for 30 days without changing it. Just observe. Most people are shocked by what they find — and that awareness alone changes behavior more than any budget.",
+      "Small daily expenses are where most people leak money. A daily $5 coffee is $150/month, $1,800/year. Not saying don't have coffee — just saying know what you're choosing, consciously.",
+    ]
+  },
+  {
+    keys:['stress','stressed','anxiety','anxious','overwhelm','overwhelmed','panic','worry','worrying','burnout','burn out','burned out','mental health','depression','sad','unhappy'],
+    replies:[
+      "Stress and habits have a two-way relationship. Stress kills habits — but strong habits are also one of the best stress management tools. Prioritize your lowest-effort habits on high-stress days to maintain the routine without adding pressure.",
+      "When you're overwhelmed, simplify radically. Drop everything except your 1-2 most foundational habits. Exercise and sleep. Or water and journaling. Whatever is most grounding. Survival mode is temporary — the habits are long-term.",
+      "Journaling is one of the most evidence-backed stress reduction tools. Even 15 minutes of expressive writing (writing freely about what you're stressed about) has been shown to reduce cortisol and improve immune function.",
+      "Exercise is a clinical-level intervention for anxiety and depression. Even a 20-minute walk raises mood-regulating neurotransmitters for hours afterward. If you have one habit to protect during hard times, protect movement.",
+      "The 'stress reset' habit: when you feel overwhelmed, step outside for 5 minutes, breathe slowly, and look at something in the distance. It activates the parasympathetic nervous system, lowers cortisol, and resets your focus.",
+      "On overwhelm days, use the '2-minute rule' for everything. If any task — habit or otherwise — can be done in 2 minutes, do it now. This clears mental clutter fast and creates momentum.",
+    ]
+  },
+  {
+    keys:['cold shower','cold water','cold plunge','ice bath','contrast','sauna','heat'],
+    replies:[
+      "Cold showers are one of the highest-willpower-to-time-investment habits. Even 30 seconds of cold at the end of a warm shower can improve alertness, circulation, and mood — and the daily act of doing something uncomfortable builds mental resilience that transfers to other habits.",
+      "The cold exposure research is real: brief cold water immersion raises norepinephrine levels (alertness and focus) by up to 300% and increases dopamine levels for hours. It's the biological explanation for why it feels so good afterward.",
+      "The hardest part of a cold shower is the decision to turn the knob. Use a 3-2-1 countdown. Don't negotiate with yourself — that's where willpower runs out. Count and act.",
+      "Sauna use (15-20 minutes, 4+ times per week) has compelling research behind it for cardiovascular health, stress hormones, and even longevity. If you have access to one, it's a high-ROI wellness habit.",
+      "Contrast therapy (alternating hot and cold) accelerates recovery from exercise, reduces inflammation, and has a powerful mood-elevating effect. Even just alternating hot and cold water in the shower for a few minutes has measurable effects.",
+    ]
+  },
+  {
+    keys:['yoga','stretch','stretching','flexibility','mobility','foam roll','posture','back pain','sitting','sedentary'],
+    replies:[
+      "Flexibility and mobility work is the most neglected high-value habit. 10 minutes of stretching daily — particularly hips, hamstrings, and thoracic spine — reverses the damage from sitting and dramatically improves how you feel.",
+      "Yoga as a habit benefits far beyond flexibility: it builds body awareness, breath control, focus, and stress resilience. Even a 10-minute morning yoga habit produces noticeable changes within a few weeks.",
+      "Posture is a habit. Sitting with your spine long, shoulders back and down, chin tucked — practiced intentionally — gradually becomes your default position. Set a posture check reminder every hour.",
+      "The best stretching habit is 'opportunistic stretching' — doing it while you're doing something else. Stretch your calves while brushing your teeth, your hip flexors while waiting for coffee, your chest while watching TV.",
+      "If you sit most of the day, the hip flexors tighten and pull the pelvis forward, causing lower back pain. A daily 2-minute hip flexor stretch is one of the highest-value small habits for desk workers.",
+    ]
+  },
+  {
+    keys:['grateful','gratitude','thankful','appreciate','positive thinking','mindset','optimism','perspective','attitude'],
+    replies:[
+      "Gratitude journaling has some of the strongest evidence in positive psychology. Writing 3 specific things you're grateful for — with details about why — rewires the brain's default toward noticing positives. The key word is specific: not 'my family' but 'the way my partner made me laugh at dinner.'",
+      "Gratitude is a habit of attention. The world doesn't change — what you notice does. Practice noticing small positives throughout the day: a warm cup of coffee, a moment of sun, getting a task done. Over time this becomes your baseline.",
+      "The most effective gratitude practice is telling people — not just writing it down. Sending a text to someone to tell them something specific you appreciate about them creates positive feedback for both of you.",
+      "Mindset is trained, not given. Optimism, resilience, and perspective are skills you build through consistent practice — journaling, reframing, gratitude, and getting evidence that you can handle hard things.",
+      "One powerful mindset habit: when something bad happens, ask 'what is this making possible?' Not toxic positivity — genuine reframing. Setbacks often force pivots that lead to better outcomes than the original plan.",
+      "Negative visualization (briefly imagining life without the things you have) is a Stoic technique shown to dramatically increase appreciation for what you already have. A 2-minute daily practice can shift your baseline happiness.",
+    ]
+  },
+  {
+    keys:['procrastinat','putting off','delay','delaying','later','tomorrow','next week','not now','distracted','distract','focus problem','can\'t focus','cant focus','attention'],
+    replies:[
+      "Procrastination is usually fear, not laziness. Fear of failure, fear of it not being good enough, fear of starting something hard. The cure is making the first step so small that fear doesn't trigger — starting is the only goal.",
+      "The Zeigarnik effect: your brain remembers incomplete tasks and creates background mental noise about them. Starting a task — even for 2 minutes — quiets that noise and often pulls you into completing it. Use this to your advantage.",
+      "Try 'temptation bundling' for tasks you procrastinate: only allow yourself your favorite podcast, coffee, or snack while doing the thing you're avoiding. The procrastinated task becomes access to the reward.",
+      "Procrastination thrives on vague tasks. 'Work on the project' is easy to avoid. 'Write the opening paragraph' is concrete enough to start. Make every task on your list a specific next action.",
+      "If you're procrastinating, ask: am I avoiding this because it's unclear, because it's hard, or because it genuinely doesn't need to be done? Sometimes procrastination is wisdom — your gut knows the task isn't right yet.",
+      "The '10-minute start' technique: commit to just 10 minutes on the task. Set a timer. At the end of 10 minutes you're allowed to stop — but you usually won't. Starting breaks the avoidance loop.",
+    ]
+  },
+  {
+    keys:['confidence','self esteem','self-esteem','self worth','self-worth','believe in myself','believe in yourself','doubt','self doubt','imposter','insecure','insecurity'],
+    replies:[
+      "Confidence is built through evidence — evidence that you can do hard things. Every habit you stick to is proof. Every streak, every morning you showed up when you didn't want to — these are deposits in your confidence bank.",
+      "Self-esteem comes from keeping the promises you make to yourself. Small promises kept consistently build a deep sense of self-trust that no external validation can give you. Your habit tracker is literally a confidence-building machine.",
+      "Imposter syndrome often accompanies growth — it means you're doing something that matters. The antidote is not more reassurance, but more action. Do the thing, collect the evidence, update your self-concept.",
+      "The most powerful confidence habit is showing up physically — posture, voice, eye contact, deliberate movement. These aren't just external signals; they genuinely change your hormonal state and how you feel inside.",
+      "Stop comparing your chapter 1 to someone else's chapter 20. The only meaningful comparison is to yourself 6 months ago. Track your own trajectory — that's what this app is for.",
+    ]
+  },
+  {
+    keys:['creative','creativity','art','draw','drawing','music','write','writing','paint','painting','design','imagine','imagination','idea','ideas','inspiration'],
+    replies:[
+      "Creativity thrives on consistent practice and withers with inconsistent bursts. Daily creative habits — even 15 minutes — produce more creative output than occasional marathon sessions because they keep the creative muscle warm.",
+      "Julia Cameron's 'Morning Pages' (3 pages of free-form writing first thing in the morning) is one of the most widely used creative unblocking techniques. It clears mental clutter and surfaces ideas that don't emerge when you're 'trying' to be creative.",
+      "The best creative habit is consuming broadly. Reading outside your field, listening to different music, exploring unfamiliar places — these cross-pollinate ideas in ways that direct practice can't. Inputs feed outputs.",
+      "Constraints breed creativity. 'Write a story in 100 words' is more creatively stimulating than 'write whatever you want.' Giving yourself creative constraints as a daily habit produces surprisingly strong results.",
+      "Creative work needs two modes: generative (ideas flow freely, no editing) and refinement (critical evaluation). Keeping them separate as distinct habits — brainstorm one day, refine another — produces much better work than trying to do both simultaneously.",
+    ]
+  },
+  {
+    keys:['reading','read','books','book','learn','learning','knowledge','study','studying','education','educate'],
+    replies:[
+      "Reading consistently is easier when tied to a specific time and place — the same chair, same time every day. Even 10 pages a day adds up to 15-20 books a year. Remove friction by keeping your book visible.",
+      "Reading before bed is a scientifically validated wind-down habit — it reduces stress by up to 68% in studies and helps you fall asleep faster than screens.",
+      "Active reading beats passive reading dramatically. After each chapter, pause and summarize in your own words what you just read. This forces deeper processing and dramatically improves retention.",
+      "The 'buy it and start it immediately' rule for books: if you buy a book and don't start it within 48 hours, the chances of finishing it drop significantly. Batch-buying books to read 'later' is a trap.",
+      "Non-fiction reading habit tip: read with a specific question in mind. 'What is the most immediately applicable thing in this book?' Searching for the answer makes reading faster and more useful.",
+      ctx=>`Reading is a high-value habit to protect — even ${ctx.habits.some(h=>/read/i.test(h.name))?`you already have it in your list, which is great — `:''}10 minutes daily compounds into enormous knowledge over a year. Protect it like any other keystone habit.`,
+    ]
+  },
+  {
+    keys:['meditat','mindful','mindfulness','meditate','meditation','quiet','silence','still','stillness','awareness','present','presence'],
+    replies:[
+      "Even 5 minutes of meditation daily has measurable effects on stress and focus after a few weeks. The key is consistency over duration — 5 minutes every day beats 30 minutes twice a week.",
+      "The goal of meditation isn't to stop thoughts — it's to notice when you've been carried away by thoughts and return your attention. Every time you notice and return, that's a mental rep. The more reps, the stronger your focus becomes.",
+      "Guided meditation apps (like Headspace, Calm, or Insight Timer) dramatically lower the barrier to starting. Use one for the first 30 days until sitting quietly feels natural.",
+      "Body scan meditation before sleep is one of the most effective techniques for people who struggle to switch off. Systematically relax each body part from toes to head — by the time you reach your scalp, most people are asleep.",
+      "Meditation trains a skill that transfers everywhere: the ability to notice where your attention is and redirect it intentionally. This is the foundation of focus, emotional regulation, and habit follow-through.",
+      "Micro-meditation: even 3 deep, slow breaths with full attention is a meditation. When stressed at your desk, waiting in line, or feeling overwhelmed — 3 intentional breaths reset the nervous system faster than almost anything.",
+    ]
+  },
+  {
+    keys:['accountability','accountable','partner','buddy','coach','support','someone','tell someone','commit','commitment','promise','social pressure'],
+    replies:[
+      "Accountability is one of the most powerful habit accelerators. When you commit to another person — a friend, partner, or coach — completion rates for habits and goals roughly double. Social pressure is a feature, not a bug.",
+      "The most effective accountability is specific and scheduled: 'I'll text you every morning after my workout' beats 'let me know if I stop going to the gym.' Make the check-in easy and regular.",
+      "Public commitment amplifies accountability. Telling even one person your specific habit plan ('I'm going to run every Tuesday and Thursday at 7am') significantly increases follow-through compared to keeping it private.",
+      "If you don't have an accountability partner, use self-accountability tools: a visible habit tracker (which you have), a daily review journal, or even sending yourself a message at the end of each day.",
+      "The best accountability relationships are mutual — you're supporting each other, not just being monitored. Shared goals, shared check-ins, and celebrating each other's wins create a positive feedback loop.",
+    ]
+  },
+  {
+    keys:['weekend','weekends','saturday','sunday','days off','holiday','vacation','travel','routine broken','routine disrupted','disrupted','disruption','inconsistent','off routine'],
+    replies:[
+      "Weekends are where most habits die. Having a modified 'weekend version' of your routine — shorter, simpler, but consistent — is better than fully dropping habits and having to restart Monday.",
+      "Vacations and disruptions are inevitable. The habit to build is returning to your routine quickly after disruption, not maintaining perfection. Resilience to breaks is a skill.",
+      "Social jet lag — staying up late and sleeping in on weekends — disrupts your circadian rhythm and makes Monday morning brutal. Keeping wake time within an hour of your weekday time, even on weekends, maintains momentum.",
+      "When traveling, identify 2-3 non-negotiable habits you'll maintain no matter what. These anchor habits keep your identity intact even when everything else is different.",
+      ctx=>`In this app you can set habits to specific days — so if some habits are only for weekdays, schedule them that way. ${ctx.habits.some(h=>h.days&&h.days.length<7)?'Looks like you already have some habits scheduled selectively — smart.':'You can do this with the scheduling feature when editing any habit.'}`,
+    ]
+  },
+  {
+    keys:['how long','long does it take','when will','how soon','results','when to expect','time frame','timeline','quick','quickly','fast results','patience','patient'],
+    replies:[
+      "Habit automation takes 18-254 days (average 66 days) according to research. Simple habits automate faster; complex ones take longer. Most people quit in the first 2-4 weeks — the exact window before it starts feeling natural.",
+      "You'll feel the habit becoming easier around day 20-30. You'll feel it becoming automatic around day 60-90. But results from the habit (health, fitness, knowledge) compound for years beyond that.",
+      "Impatience is the enemy of habits. The compounding nature of habits means the biggest results come later — but only if you stayed consistent during the boring, early stages when nothing visible seems to be happening.",
+      "Think of habits like investing. The returns feel negligible at first and exponential later. A year of consistent daily habits produces results that look impossible to someone who just started.",
+      "The question isn't 'how long until I see results' — it's 'what is my identity 6 months from now if I keep doing this every day?' That identity shift is the real result. The external changes follow.",
+    ]
+  },
+];
+
+
+
+function getContext(){
+  try{
+    const today=getToday();
+    const sc=scheduledForDate(today);
+    const streak=getStreak();
+    const cons=getConsistencyScore();
+    const doneTodayCount=habits.filter(h=>h.done&&sc.includes(h.id)).length;
+    return {habits,streak,cons,doneTodayCount,total:sc.length,lowCons:cons!==null&&cons<60};
+  }catch(e){
+    return {habits:[],streak:0,cons:null,doneTodayCount:0,total:0,lowCons:false};
+  }
+}
+
+// Small talk handled before the knowledge base
+const SMALL_TALK=[
+  {
+    keys:['how are you','how r you','how are u','hows it going','how is it going','how do you do','you doing','you ok','you good'],
+    replies:["I'm doing great, thanks for asking! I'm here whenever you need habit advice. What's on your mind?","Feeling helpful! How are YOU doing — and more importantly, how are the habits going?","All good on my end! How about you — anything habit-related I can help with today?","Ready and here for you! What habit questions can I help with?"]
+  },
+  {
+    keys:['hello','hi there','hey there','good morning','good evening','good afternoon','howdy','greetings','sup','what\'s up','whats up','yo ','hey ','hi '],
+    replies:[
+      ctx=>`Hey! ${ctx.streak>0?`I see you're on a ${ctx.streak}-day streak — nice work. `:''}What can I help you with today?`,
+      ctx=>`Hi! ${ctx.doneTodayCount>0?`You've already done ${ctx.doneTodayCount} habit${ctx.doneTodayCount>1?'s':''} today — great start. `:''}Ask me anything about habits and routines.`,
+      "Hello! I'm your habit coach. Ask me about building habits, staying consistent, motivation, morning routines — anything. What's on your mind?",
+      "Hey there! Ready to help. What habit challenge can I help you with?",
+    ]
+  },
+  {
+    keys:['who are you','what are you','what can you do','what do you do','how does this work','how do you work','what do you know'],
+    replies:[
+      "I'm your built-in habit coach! I know about habit science, consistency, motivation, morning and evening routines, exercise, sleep, meditation, nutrition, focus, streaks, and more. I can also see your actual habit data to give personalized advice. What do you want to work on?",
+      "I'm a habit coach powered by a knowledge base of evidence-based habit research. Ask me why you keep skipping habits, how to build better routines, what time is best for habits, how to stay consistent — I've got detailed answers for all of it.",
+    ]
+  },
+  {
+    keys:['thank','thanks','thank you','appreciate','helpful','great answer','good answer','perfect','love it','nice one','brilliant'],
+    replies:["You're welcome! Keep showing up — small consistent actions really do compound. ✦","Happy to help! One habit at a time. ✦","Anytime! You've got this. ✦","Glad that helped! Now go check off a habit. ✦","Always here when you need it. ✦"]
+  },
+  {
+    keys:['bye','goodbye','see you','later','cya','ttyl','take care','good night','goodnight'],
+    replies:["See you! Go check off a habit. ✦","Take care — and keep the streak alive! ✦","Bye! Remember: even one small habit today counts. ✦","Good chat! Come back any time you need support. ✦"]
+  },
+  {
+    keys:['haha','lol','lmao','funny','joke','hehe','😂','😄'],
+    replies:["Ha! Glad you're in a good mood — that's actually a great state to check off a habit. 😄","Haha — now channel that energy into one habit today! ✦","😄 Keep that energy going — good moods are great for building habits!"]
+  },
+  {
+    keys:['wow','amazing','impressive','incredible','mind blown','that\'s crazy','no way'],
+    replies:["Right?! Habit science is genuinely fascinating. What else do you want to know?","The research really is remarkable — consistent tiny actions compound into enormous change. What habit are you working on?"]
+  },
+];
+
+function generateReply(text){
+  const lower=text.toLowerCase().trim();
+  const ctx=getContext();
+
+  // Small talk first
+  for(const entry of SMALL_TALK){
+    if(entry.keys.some(k=>lower.includes(k))){
+      const replies=entry.replies;
+      const chosen=replies[Math.floor(Math.random()*replies.length)];
+      return typeof chosen==='function'?chosen(ctx):chosen;
+    }
+  }
+
+  // Score every KB entry
+  let best=null,bestScore=0;
+  for(const entry of KB){
+    const score=entry.keys.reduce((s,k)=>s+(lower.includes(k)?1:0),0);
+    if(score>bestScore){bestScore=score;best=entry;}
+  }
+  if(best&&bestScore>0){
+    const chosen=pick(best.replies);
+    return typeof chosen==='function'?chosen(ctx):chosen;
+  }
+
+  // Fallback
+  const fallbacks=[
+    "I didn't quite catch that — could you rephrase? I'm best at questions about habits, consistency, motivation, streaks, routines, sleep, exercise, focus, and mindfulness.",
+    "Good question! Could you be a bit more specific? For example: are you struggling with skipping habits, staying motivated, building a morning routine, or something else?",
+    "I want to help but I'm not sure what you're asking. Try something like 'why do I keep skipping?' or 'how do I build a morning routine?' or 'how does habit chaining work?'",
+    "Hmm, I'm not sure I have a great answer for that specific question. Try asking about habits, consistency, motivation, streaks, sleep, exercise, or routines — those are my specialties!",
+  ];
+  return pick(fallbacks);
+}
+
+// ── UI ──
 chatFab.addEventListener('click',()=>{
   chatWindow.classList.toggle('open');
   if(chatWindow.classList.contains('open')){
     chatBadge.classList.remove('show');
     if(!chatOpened){
       chatOpened=true;
-      addBotMessage("Hi! I'm your habit coach. I can see your current habits and progress — ask me anything about building better routines, staying consistent, or improving your results. ✦");
+      const ctx=getContext();
+      let intro="Hi! I'm your habit coach. Ask me anything about building better routines, staying consistent, or improving your results. ✦";
+      if(ctx.streak>5) intro=`Hi! I can see you're on a ${ctx.streak}-day streak — impressive. Ask me anything about habits, consistency, or getting even better results. ✦`;
+      else if(ctx.doneTodayCount>0) intro=`Hi! You've already completed ${ctx.doneTodayCount} habit${ctx.doneTodayCount>1?'s':''} today — solid start. Ask me anything about building better routines. ✦`;
+      addBotMessage(intro);
     }
     setTimeout(()=>chatInput.focus(),100);
   }
@@ -1192,12 +1752,18 @@ chatInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.prev
 function addBotMessage(text){
   const wrap=document.createElement('div');wrap.className='chat-msg bot';
   const bubble=document.createElement('div');bubble.className='chat-bubble';
-  bubble.textContent=text;
   const time=document.createElement('div');time.className='chat-msg-time';
   const now=new Date();time.textContent=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
   wrap.appendChild(bubble);wrap.appendChild(time);
   chatMessages.appendChild(wrap);
   chatMessages.scrollTop=chatMessages.scrollHeight;
+  // Typewriter effect
+  let i=0;
+  const interval=setInterval(()=>{
+    bubble.textContent=text.slice(0,i++);
+    chatMessages.scrollTop=chatMessages.scrollHeight;
+    if(i>text.length) clearInterval(interval);
+  },12);
   return bubble;
 }
 
@@ -1205,7 +1771,8 @@ function addUserMessage(text){
   const wrap=document.createElement('div');wrap.className='chat-msg user';
   const bubble=document.createElement('div');bubble.className='chat-bubble';
   bubble.textContent=text;
-  chatMessages.appendChild(wrap);wrap.appendChild(bubble);
+  wrap.appendChild(bubble);
+  chatMessages.appendChild(wrap);
   chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
@@ -1216,59 +1783,21 @@ function showTyping(){
 }
 function hideTyping(){const el=document.getElementById('chatTyping');if(el)el.remove();}
 
-function buildHabitContext(){
-  // Give the AI real context about the user's habits and stats
-  if(typeof habits==='undefined'||!habits.length) return '';
-  const today=typeof getToday==='function'?getToday():new Date().toLocaleDateString();
-  const sc=typeof scheduledForDate==='function'?scheduledForDate(today):habits.map(h=>h.id);
-  const doneTodayCount=habits.filter(h=>h.done&&sc.includes(h.id)).length;
-  const streak=typeof getStreak==='function'?getStreak():0;
-  const cons=typeof getConsistencyScore==='function'?getConsistencyScore():null;
-
-  const habitList=habits.map(h=>{
-    const days=(h.days||[0,1,2,3,4,5,6]).length===7?'daily':h.days.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ');
-    return `- "${h.name}" (${h.time}, ${days}, ${h.done?'done today':'not done today'})`;
-  }).join('\n');
-
-  return `The user's current habits:\n${habitList}\n\nToday: ${doneTodayCount}/${sc.length} habits completed. Current streak: ${streak} days. Consistency score: ${cons!==null?cons+'%':'not enough data yet'}.`;
-}
-
-async function sendChatMessage(text){
-  if(!text) return;
+function sendChatMessage(text){
+  if(!text)return;
   chatInput.value='';
   chatSend.disabled=true;
   addUserMessage(text);
-  chatHistory.push({role:'user',content:text});
   showTyping();
-
-  const systemPrompt=`You are a warm, knowledgeable habit coach embedded in a personal habit tracker app. You give practical, evidence-based advice about habit formation, consistency, motivation, and self-improvement. Keep responses concise (2-4 sentences unless a list is genuinely helpful). Be encouraging but honest. Use the user's actual habit data when relevant to give personalized advice.\n\n${buildHabitContext()}`;
-
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        system:systemPrompt,
-        messages:chatHistory
-      })
-    });
-    const data=await res.json();
+  // Simulate a short thinking delay for natural feel
+  const delay=600+Math.random()*600;
+  setTimeout(()=>{
     hideTyping();
-    const reply=data.content?.[0]?.text||"Sorry, I couldn't respond right now. Try again!";
+    const reply=generateReply(text);
     addBotMessage(reply);
-    chatHistory.push({role:'assistant',content:reply});
-    // Keep history to last 10 turns to stay within context
-    if(chatHistory.length>20) chatHistory=chatHistory.slice(-20);
-    // Show badge if window is closed
-    if(!chatWindow.classList.contains('open')) chatBadge.classList.add('show');
-  }catch(e){
-    hideTyping();
-    addBotMessage("I'm having trouble connecting right now. Check your connection and try again.");
-  }
-  chatSend.disabled=false;
-  chatInput.focus();
+    chatSend.disabled=false;
+    chatInput.focus();
+  },delay);
 }
 </script>
 </body>
