@@ -1593,7 +1593,7 @@ function renderApp(){
           <button class="h-btn h-edit" title="Edit">✎</button>
           <button class="h-btn h-del" title="Delete">✕</button>
         </div>
-        ${!unlocked&&!h.done?`<div class="locked-overlay"><span>🔒 complete prerequisite first</span></div>`:''}`;
+        ${!unlocked&&!h.done?'<div class="locked-overlay"><span>🔒 complete prerequisite first</span></div>':''}`;
       if(scheduled&&unlocked) card.addEventListener('click',e=>{if(e.target.closest('.h-actions'))return;toggleHabit(h.id,card);});
       card.querySelector('.h-edit').addEventListener('click',e=>{e.stopPropagation();openEditModal(h);});
       card.querySelector('.h-del').addEventListener('click',e=>{e.stopPropagation();deleteHabit(h.id);});
@@ -1650,7 +1650,7 @@ function renderInsights(){
     const pct=scheduled.length>0?Math.round(scheduled.filter(x=>x.done).length/scheduled.length*100):0;
     const skip=analyzeSkipPattern(h);
     const row=document.createElement('div');row.className='hstat-row';
-    row.innerHTML=`<div class="hstat-name">${h.emoji} ${h.name}</div><div class="hstat-bar-bg"><div class="hstat-bar-fill" style="width:${pct}%"></div></div><div class="hstat-pct">${pct}%</div>${skip?`<div class="skip-badge">${skip}</div>`:''}`;
+    row.innerHTML='<div class="hstat-name">'+h.emoji+' '+h.name+'</div><div class="hstat-bar-bg"><div class="hstat-bar-fill" style="width:'+pct+'%"></div></div><div class="hstat-pct">'+pct+'%</div>'+(skip?'<div class="skip-badge">'+skip+'</div>':'');
     statsEl.appendChild(row);
   });
 
@@ -1740,17 +1740,17 @@ const KB=[
       ctx=>`Stack habits onto existing routines — attach a new habit right after something you already do automatically, like making coffee or brushing your teeth. This is called habit stacking and it's one of the most reliable techniques.${ctx.lowCons?' With your current consistency, focus on making existing habits stick before optimizing.':''}`,
       "The single biggest efficiency move is reducing friction. Lay out your gym clothes the night before, keep your water bottle on your desk, put your book on your pillow. You want the habit to be the path of least resistance.",
       "Two-minute rule: any habit can be started in under two minutes. Can't do a full workout? Do 2 minutes of stretching. Can't journal? Write one sentence. Starting is the hardest part — once you're moving, momentum takes over.",
-      ctx=>`Environment design beats willpower every time. Rearrange your space so your habits are obvious and easy. ${ctx.habits.length>0?`Look at your habit list — which ones have the most friction? Fix those first.`:'Add habits in the app and think about where and when each one fits into your day.'}`,
+      ctx=>`Environment design beats willpower every time. Rearrange your space so your habits are obvious and easy. ${ctx.habits.length>0?'Look at your habit list — which ones have the most friction? Fix those first.':'Add habits in the app and think about where and when each one fits into your day.'}`,
       "Batch your habits together where possible. A 20-minute morning block covering hydration, movement, and mindfulness is easier to protect than three separate commitments scattered through the day.",
       "Track visibly. A habit tracker you can see — like this one — creates a 'don't break the chain' effect that's surprisingly powerful. The visual streak becomes its own motivation.",
       "The most efficient habits are ones that improve other habits. Sleep improves willpower. Exercise improves focus and mood. Hydration improves energy. Prioritize foundational habits first.",
-      ctx=>`If a habit is taking more willpower than it should, it's probably too hard or poorly timed. ${ctx.cons!==null&&ctx.cons<60?`At ${ctx.cons}% consistency, I'd redesign your 2-3 hardest habits before anything else.`:'Audit your habits — which ones feel hard? Those need to be made smaller or moved to a better time.'}`,
+      ctx=>`If a habit is taking more willpower than it should, it's probably too hard or poorly timed. ${ctx.cons!==null&&ctx.cons<60?'At '+ctx.cons+'% consistency, I\'d redesign your 2-3 hardest habits before anything else.':'Audit your habits — which ones feel hard? Those need to be made smaller or moved to a better time.'}`,
     ]
   },
   {
     keys:['skip','skipping','miss','missing','forget','forgot','avoid','avoiding','procrastinat','put off','keep failing','can\'t do','cant do'],
     replies:[
-      ctx=>`Missing once is human. Missing twice is the start of a new (bad) habit — that's the rule to protect against. ${ctx.habits.length>6?'You also have quite a few habits. Too many choices often leads to avoiding all of them — try cutting to your top 3.':'The fix is never more willpower, it's better design.'}`,
+      ctx=>`Missing once is human. Missing twice is the start of a new (bad) habit — that's the rule to protect against. ${ctx.habits.length>6?'You also have quite a few habits. Too many choices often leads to avoiding all of them — try cutting to your top 3.':'The fix is never more willpower, it\'s better design.'}`,
       "Ask yourself three questions when you skip: Was the habit too hard? Was it at the wrong time? Did I not have a clear trigger? Most skipping is a design problem, not a character flaw.",
       "Try the 'never miss twice' rule. Missing once is an accident. Missing twice is the beginning of quitting. If you miss today, make it non-negotiable to do it tomorrow — even a tiny version.",
       ctx=>`Use the app's habit chaining feature. Link a habit you keep skipping to one you never skip. The existing habit becomes the automatic trigger. ${ctx.habits.length>1?'You already have habits you could chain — look at your list.':'Add a reliable anchor habit first, then chain the new one to it.'}`,
@@ -1758,20 +1758,20 @@ const KB=[
       "Reduce the habit to its absolute minimum. If you keep skipping 'exercise for 30 minutes,' change it to 'put on workout clothes.' You can always do more, but you need to make starting frictionless.",
       "Check what time your habits are set for. Afternoon habits have the lowest completion rates due to energy dips and interruptions. Moving one skipped habit to morning often instantly fixes it.",
       "Create a 'fresh start' tomorrow. Streaks can feel daunting when broken — so reframe it: every morning is a new day, a new vote for who you're becoming. Yesterday doesn't count against you unless you let it.",
-      ctx=>`Look at your Insights tab. It shows which habits you're most likely to skip and on which days. If there's a pattern — say, always skipping on Mondays — adjust the schedule for that habit rather than fighting the pattern.${ctx.cons!==null?` Your consistency is ${ctx.cons}% overall.`:''}`,
+      ctx=>`Look at your Insights tab. It shows which habits you're most likely to skip and on which days. If there's a pattern — say, always skipping on Mondays — adjust the schedule for that habit rather than fighting the pattern.${ctx.cons!==null?' Your consistency is '+ctx.cons+'% overall.':''}`,
     ]
   },
   {
     keys:['motivat','inspire','inspired','drive','driven','enthusiasm','excited','keep going','give up','quit','unmotivated','no motivation','lost motivation','struggling','hard','difficult'],
     replies:[
-      ctx=>`Motivation follows action — it doesn't precede it. You don't wait until you feel like doing something, you do it and then feel motivated. ${ctx.streak>3?`You already proved this — you've been going ${ctx.streak} days. You didn't feel motivated every one of those days.`:'Start with the smallest possible version of one habit today, right now.'}`,
+      ctx=>`Motivation follows action — it doesn't precede it. You don't wait until you feel like doing something, you do it and then feel motivated. ${ctx.streak>3?'You already proved this — you\'ve been going '+ctx.streak+' days. You didn\'t feel motivated every one of those days.':'Start with the smallest possible version of one habit today, right now.'}`,
       "The problem isn't motivation — it's that the habit feels too big. Break it in half. Then break it in half again. 'Read for 30 minutes' becomes 'read one paragraph.' You can always do more once you've started.",
       "Build identity, not just habits. Instead of 'I want to work out more,' tell yourself 'I'm becoming someone who moves their body every day.' That identity shift changes how you approach the habit — it becomes who you are, not what you do.",
       ctx=>`Make your environment do the motivating for you. Put your water bottle where you'll see it first. Set your running shoes by the door. Remove the friction between you and the habit. ${ctx.habits.some(h=>!h.done)?' What habit could you make harder to avoid right now?':''}`,
       "Motivation is a feeling, and feelings are temporary. Systems are permanent. Design a system that works even on the days you feel awful — that's the whole point of a habit tracker.",
       "Find your 'why' one level deeper. Not 'I want to exercise' but 'I want energy to play with my kids.' Not 'I want to read' but 'I want to keep my mind sharp as I age.' Deep whys survive rough days.",
       "Use temptation bundling: only do something you enjoy (a podcast, a show, a coffee) while doing your habit. Suddenly the habit becomes the thing you look forward to.",
-      ctx=>`Check your streak: ${ctx.streak>0?`you're at ${ctx.streak} days — that itself is motivation. Don't break something you've already built.`:'A streak of even 3 days creates real momentum. Do one habit today to start it.'}`,
+      ctx=>`Check your streak: ${ctx.streak>0?'you\'re at '+ctx.streak+' days — that itself is motivation. Don\'t break something you\'ve already built.':'A streak of even 3 days creates real momentum. Do one habit today to start it.'}`,
       "On your worst days, commit to 1% of the habit. 1 pushup. 1 sentence. 1 minute of meditation. Your identity as 'someone who shows up every day' is worth more than any single performance.",
     ]
   },
@@ -1785,7 +1785,7 @@ const KB=[
         `${ctx.streak} days is truly exceptional. Your habits are likely automatic now. The question shifts from 'how do I keep going' to 'what should I add or upgrade next.'`,
       "The 'don't break the chain' method works because streaks make future behavior feel tied to past behavior. You're not just doing a habit — you're protecting something you've built.",
       "If you break a streak, the most important thing is your response. Don't spiral. Don't catastrophize. Just restart immediately. The gap between missing once and quitting is entirely mental.",
-      ctx=>`Protect your streak with a 'minimum viable habit.' On crazy days, just do 1 rep, 1 sip, 1 line. The streak matters more than the quality on bad days. ${ctx.streak>0?`You've got ${ctx.streak} days to protect — worth fighting for.`:''}`,
+      ctx=>`Protect your streak with a 'minimum viable habit.' On crazy days, just do 1 rep, 1 sip, 1 line. The streak matters more than the quality on bad days. ${ctx.streak>0?'You\'ve got '+ctx.streak+' days to protect — worth fighting for.':''}`,
       "Some people find it helpful to have a 'wildcard' — one skip allowed per month that doesn't break the streak. It removes the all-or-nothing pressure that causes people to give up entirely after missing once.",
       "The science behind streaks: each completed habit releases a small dopamine hit. Over time your brain starts associating the habit with reward, which makes the pull toward it stronger. You're literally rewiring yourself.",
     ]
@@ -2149,7 +2149,7 @@ const KB=[
       "Active reading beats passive reading dramatically. After each chapter, pause and summarize in your own words what you just read. This forces deeper processing and dramatically improves retention.",
       "The 'buy it and start it immediately' rule for books: if you buy a book and don't start it within 48 hours, the chances of finishing it drop significantly. Batch-buying books to read 'later' is a trap.",
       "Non-fiction reading habit tip: read with a specific question in mind. 'What is the most immediately applicable thing in this book?' Searching for the answer makes reading faster and more useful.",
-      ctx=>`Reading is a high-value habit to protect — even ${ctx.habits.some(h=>/read/i.test(h.name))?`you already have it in your list, which is great — `:''}10 minutes daily compounds into enormous knowledge over a year. Protect it like any other keystone habit.`,
+      ctx=>`Reading is a high-value habit to protect — even ${ctx.habits.some(h=>/read/i.test(h.name))?'you already have it in your list, which is great — ':''}10 minutes daily compounds into enormous knowledge over a year. Protect it like any other keystone habit.`,
     ]
   },
   {
@@ -2219,8 +2219,8 @@ const SMALL_TALK=[
   {
     keys:['hello','hi there','hey there','good morning','good evening','good afternoon','howdy','greetings','sup','what\'s up','whats up','yo ','hey ','hi '],
     replies:[
-      ctx=>`Hey! ${ctx.streak>0?`I see you're on a ${ctx.streak}-day streak — nice work. `:''}What can I help you with today?`,
-      ctx=>`Hi! ${ctx.doneTodayCount>0?`You've already done ${ctx.doneTodayCount} habit${ctx.doneTodayCount>1?'s':''} today — great start. `:''}Ask me anything about habits and routines.`,
+      ctx=>`Hey! ${ctx.streak>0?'I see you\'re on a '+ctx.streak+'-day streak — nice work. ':''}What can I help you with today?`,
+      ctx=>`Hi! ${ctx.doneTodayCount>0?'You\'ve already done '+ctx.doneTodayCount+' habit'+(ctx.doneTodayCount>1?'s':'')+' today — great start. ':''}Ask me anything about habits and routines.`,
       "Hello! I'm your habit coach. Ask me about building habits, staying consistent, motivation, morning routines — anything. What's on your mind?",
       "Hey there! Ready to help. What habit challenge can I help you with?",
     ]
