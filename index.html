@@ -532,6 +532,593 @@ body::after{content:'';position:fixed;inset:0;background-image:repeating-linear-
   </div>
 </div>
 
+<!-- CHATBOT -->
+<button class="chat-fab" id="chatFab" title="Ask your habit coach">✦<div class="chat-badge" id="chatBadge"></div></button>
+
+<div class="chat-window" id="chatWindow">
+  <div class="chat-header">
+    <div class="chat-header-icon">✦</div>
+    <div>
+      <div class="chat-header-title">Habit Coach</div>
+      <div class="chat-header-sub">Powered by AI</div>
+    </div>
+    <button class="chat-close" id="chatClose">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-suggestions" id="chatSuggestions">
+    <button class="chat-suggestion" data-q="How can I build habits more efficiently?">Be more efficient</button>
+    <button class="chat-suggestion" data-q="Why do I keep skipping my habits?">Why do I skip?</button>
+    <button class="chat-suggestion" data-q="What's the best time of day for habits?">Best time of day</button>
+    <button class="chat-suggestion" data-q="How do I stay motivated?">Stay motivated</button>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chatInput" placeholder="Ask your habit coach…" maxlength="300"/>
+    <button class="chat-send" id="chatSend">➤</button>
+  </div>
+</div>
+
+
+</body>
+</html>E html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:#faf6f0;--paper2:#f3ede3;--paper3:#ede4d6;
+  --ink:#2c2416;--ink2:#5a4e3c;--ink3:#9a8d7a;
+  --dust:#c8bfb0;--blush:#e8a598;--sage:#8aab8e;
+  --gold:#c9924a;--sky:#7ba7c4;--cream:#f7f1e8;
+}
+[data-theme="dark"] {
+  --paper:#16130f;--paper2:#1e1a14;--paper3:#26211a;
+  --ink:#e8dfd0;--ink2:#c4b8a8;--ink3:#7a6e60;
+  --dust:#3a342c;--blush:#c47060;--sage:#6a8b6e;
+  --gold:#c9924a;--sky:#5a87a4;--cream:#1c1814;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--paper);color:var(--ink);font-family:'Crimson Pro',serif;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+body::after{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(transparent,transparent 31px,rgba(180,160,130,.08) 31px,rgba(180,160,130,.08) 32px);pointer-events:none;z-index:0;}
+
+/* THEME TOGGLE */
+.theme-toggle{position:fixed;top:16px;right:16px;z-index:10000;width:38px;height:38px;border-radius:50%;background:var(--cream);border:1px solid var(--dust);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:2px 2px 0 var(--dust);}
+.theme-toggle:hover{border-color:var(--gold);box-shadow:2px 2px 0 var(--gold);transform:translate(-1px,-1px);}
+
+/* AUTH */
+#authScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:32px 24px;position:relative;z-index:1;}
+.auth-wrap{width:100%;max-width:400px;}
+.auth-brand{margin-bottom:48px;}
+.auth-brand-name{font-family:'Playfair Display',serif;font-size:52px;font-weight:400;letter-spacing:-1px;line-height:1;}
+.auth-brand-name em{font-style:italic;color:var(--gold);}
+.auth-brand-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);letter-spacing:3px;text-transform:uppercase;margin-top:8px;}
+.auth-card{background:var(--cream);border:1px solid var(--dust);padding:36px;position:relative;box-shadow:4px 4px 0 var(--paper3),8px 8px 0 var(--dust);transition:background .3s;}
+.auth-card::before{content:'';position:absolute;top:0;right:0;width:40px;height:40px;background:linear-gradient(225deg,var(--paper3) 50%,transparent 50%);}
+.tab-row{display:flex;margin-bottom:28px;border-bottom:1px solid var(--dust);}
+.tab-btn{font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--ink3);padding:8px 0;margin-right:24px;cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.f-group{margin-bottom:18px;}
+.f-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:2px;display:block;margin-bottom:6px;}
+.f-input{width:100%;background:var(--paper);border:1px solid var(--dust);border-bottom:2px solid var(--ink3);padding:10px 14px;font-size:16px;font-family:'Crimson Pro',serif;color:var(--ink);outline:none;transition:border-color .2s,background .3s;border-radius:0;-webkit-appearance:none;}
+.f-input:focus{border-bottom-color:var(--gold);}
+.f-input::placeholder{color:var(--dust);}
+.btn-main{width:100%;background:var(--ink);color:var(--paper);border:none;padding:14px;font-family:'Playfair Display',serif;font-size:18px;font-style:italic;letter-spacing:1px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
+.btn-main:hover{background:var(--ink2);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--gold);}
+.btn-main:active{transform:translate(0,0);box-shadow:none;}
+.btn-main:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+.auth-msg{font-family:'DM Mono',monospace;font-size:10px;padding:8px 12px;margin-bottom:16px;letter-spacing:1px;display:none;line-height:1.6;border-left:3px solid;}
+.auth-msg.error{color:#b04040;border-color:#b04040;background:rgba(176,64,64,.05);}
+.auth-msg.success{color:var(--sage);border-color:var(--sage);}
+.auth-msg.info{color:var(--sky);border-color:var(--sky);}
+.auth-msg.show{display:block;}
+.spinner{width:14px;height:14px;border:2px solid rgba(250,246,240,.3);border-top-color:var(--paper);border-radius:50%;animation:spin .7s linear infinite;display:none;}
+.btn-main.loading .spinner{display:block;}
+.btn-main.loading .btn-label{display:none;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-ghost{background:transparent;border:1px solid var(--dust);color:var(--ink3);padding:9px 18px;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;transition:all .15s;}
+.btn-ghost:hover{border-color:var(--ink2);color:var(--ink2);}
+
+/* VERIFY */
+#verifyEmailScreen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;position:relative;z-index:1;}
+#verifyEmailScreen.show{display:flex;}
+.verify-glyph{font-size:56px;margin-bottom:24px;animation:floatBob 3s ease-in-out infinite;}
+@keyframes floatBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.verify-title{font-family:'Playfair Display',serif;font-size:36px;font-style:italic;margin-bottom:16px;}
+.verify-body{font-size:18px;color:var(--ink2);max-width:320px;line-height:1.7;margin-bottom:32px;}
+.verify-addr{color:var(--gold);font-style:italic;}
+
+/* APP */
+#appScreen{display:none;position:relative;z-index:1;}
+#appScreen.show{display:block;}
+.app-wrap{max-width:720px;margin:0 auto;padding:0 28px 100px;}
+
+/* NAV */
+.nav-tabs{display:flex;border-bottom:1px solid var(--dust);position:sticky;top:0;background:var(--paper);z-index:100;transition:background .3s;}
+.nav-tab{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--ink3);padding:14px 16px;cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.nav-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.nav-tab:hover{color:var(--ink2);}
+.tab-pane{display:none;padding-top:28px;}
+.tab-pane.active{display:block;}
+
+/* HEADER */
+.app-header{padding:40px 0 20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;border-bottom:1px solid var(--dust);}
+.app-title{font-family:'Playfair Display',serif;font-size:56px;font-weight:400;line-height:1;letter-spacing:-1px;}
+.app-title em{font-style:italic;color:var(--gold);}
+.app-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:2px;margin-top:8px;}
+.header-right{text-align:right;padding-top:6px;}
+.streak-num{font-family:'Playfair Display',serif;font-size:48px;font-style:italic;color:var(--gold);line-height:1;}
+.streak-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:2px;}
+.saving-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--sage);margin-left:4px;opacity:0;transition:opacity .3s;vertical-align:middle;}
+.saving-dot.show{opacity:1;animation:pulse 1s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+.user-strip{display:flex;align-items:center;gap:10px;padding:12px 0 0;}
+.u-avatar{width:26px;height:26px;border-radius:50%;background:var(--paper3);border:1px solid var(--dust);font-family:'Playfair Display',serif;font-size:13px;color:var(--gold);display:flex;align-items:center;justify-content:center;font-style:italic;}
+.u-name{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.u-signout{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;background:none;border:1px solid var(--dust);padding:4px 8px;cursor:pointer;transition:all .15s;}
+.u-signout:hover{color:#b04040;border-color:#b04040;}
+
+/* PROGRESS */
+.progress-row{display:flex;align-items:center;gap:24px;padding:28px 0 0;}
+.progress-ring-wrap{position:relative;width:72px;height:72px;flex-shrink:0;}
+.progress-ring-wrap svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:var(--paper3);stroke-width:5;}
+.ring-fill{fill:none;stroke:var(--gold);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.16,1,.3,1);}
+.ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:var(--ink);}
+.progress-headline{font-family:'Playfair Display',serif;font-size:22px;font-style:italic;line-height:1.2;}
+.progress-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:2px;margin-top:4px;}
+
+/* STATS CARDS */
+.consistency-row{display:flex;gap:12px;padding:16px 0 0;flex-wrap:wrap;}
+.cons-card{flex:1;min-width:90px;background:var(--cream);border:1px solid var(--dust);padding:12px 14px;}
+.cons-val{font-family:'Playfair Display',serif;font-size:26px;font-style:italic;color:var(--ink);line-height:1;}
+.cons-lbl{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink3);text-transform:uppercase;letter-spacing:2px;margin-top:3px;}
+.cons-sub{font-family:'DM Mono',monospace;font-size:8px;color:var(--sage);margin-top:2px;}
+
+/* BANNERS */
+.all-done{display:none;background:var(--ink);color:var(--paper);padding:14px 20px;margin-top:20px;font-family:'Playfair Display',serif;font-size:20px;font-style:italic;align-items:center;gap:10px;animation:slideDown .5s cubic-bezier(.16,1,.3,1);}
+.all-done.visible{display:flex;}
+@keyframes slideDown{from{transform:translateY(-8px);opacity:0}to{transform:translateY(0);opacity:1}}
+.recovery-banner{background:rgba(201,146,74,.08);border:1px solid var(--gold);padding:12px 16px;margin-top:16px;display:none;}
+.recovery-banner.show{display:block;}
+.recovery-text{font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:1px;line-height:1.7;}
+
+/* SECTION HEADERS */
+.section-head{display:flex;align-items:center;gap:12px;padding:36px 0 14px;}
+.section-head-line{flex:1;height:1px;background:var(--dust);}
+.section-head-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:3px;}
+.section-icon{font-size:16px;}
+
+/* HABIT CARDS */
+.habits-grid{display:flex;flex-direction:column;gap:8px;}
+.habit-card{background:var(--cream);border:1px solid var(--dust);display:flex;align-items:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;animation:cardIn .4s ease both;}
+@keyframes cardIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.habit-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dust);transition:background .2s;}
+.habit-card:hover{transform:translateX(3px);box-shadow:-3px 0 0 var(--gold);}
+.habit-card:hover::before{background:var(--gold);}
+.habit-card.done{background:var(--paper2);}
+.habit-card.done::before{background:var(--sage);}
+.habit-card.done:hover{box-shadow:-3px 0 0 var(--sage);}
+.habit-card.done .h-name{text-decoration:line-through;color:var(--ink3);}
+.habit-card.skipped{opacity:.4;cursor:default;}
+.habit-card.skipped:hover{transform:none;box-shadow:none;}
+.h-check{width:56px;min-width:56px;height:68px;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--dust);}
+.h-circle{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--dust);display:flex;align-items:center;justify-content:center;transition:all .3s cubic-bezier(.34,1.56,.64,1);}
+.habit-card.done .h-circle{background:var(--sage);border-color:var(--sage);transform:scale(1.1);box-shadow:0 0 12px rgba(138,171,142,.4);}
+.h-check-svg{opacity:0;transform:scale(0);transition:all .2s .05s cubic-bezier(.34,1.56,.64,1);}
+.habit-card.done .h-check-svg{opacity:1;transform:scale(1);}
+.h-body{flex:1;padding:12px 16px;}
+.h-name{font-size:17px;color:var(--ink);margin-bottom:2px;transition:color .2s;}
+.h-meta{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;}
+.h-chain-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:7px;color:var(--sky);border:1px solid var(--sky);padding:1px 5px;letter-spacing:1px;margin-left:6px;vertical-align:middle;}
+.h-dots{display:flex;gap:3px;align-items:center;padding:0 16px;}
+.h-dot{width:5px;height:5px;border-radius:50%;background:var(--dust);transition:background .2s;}
+.h-dot.lit{background:var(--gold);box-shadow:0 0 4px rgba(201,146,74,.5);}
+.h-dot.miss{background:var(--blush);}
+.h-actions{display:flex;opacity:0;transition:opacity .15s;}
+.habit-card:hover .h-actions{opacity:1;}
+.h-btn{background:none;border:none;color:var(--ink3);cursor:pointer;padding:8px 8px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;transition:color .15s;}
+.h-btn:hover{color:var(--gold);}
+.h-del:hover{color:var(--blush)!important;}
+.habit-card::after{content:'';position:absolute;inset:0;background:var(--sage);opacity:0;pointer-events:none;}
+.habit-card.flash::after{animation:cardFlash .35s ease-out forwards;}
+@keyframes cardFlash{0%{opacity:.12}100%{opacity:0}}
+.locked-overlay{position:absolute;inset:0;background:var(--paper);opacity:.65;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.locked-overlay span{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);letter-spacing:2px;text-transform:uppercase;}
+
+/* ADD HABIT */
+.add-wrap{margin-top:36px;border:1px solid var(--dust);background:var(--cream);padding:24px;position:relative;transition:background .3s;}
+.add-wrap::after{content:'new habit';font-family:'Playfair Display',serif;font-size:11px;font-style:italic;color:var(--ink3);position:absolute;top:-9px;left:20px;background:var(--cream);padding:0 8px;transition:background .3s;}
+.add-section-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;display:block;}
+.schedule-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.preset-sel{background:var(--paper);border:none;border-bottom:1px solid var(--dust);font-family:'DM Mono',monospace;font-size:9px;color:var(--ink2);letter-spacing:1px;padding:4px 0;outline:none;cursor:pointer;text-transform:uppercase;}
+.custom-day-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.day-pill{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--dust);background:var(--paper);color:var(--ink3);padding:4px 8px;cursor:pointer;transition:all .15s;}
+.day-pill.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.chain-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.chain-sel{background:var(--paper);border:none;border-bottom:1.5px solid var(--dust);font-family:'Crimson Pro',serif;font-size:16px;color:var(--ink);outline:none;padding:4px 0;cursor:pointer;flex:1;}
+.chain-sel:focus{border-bottom-color:var(--sky);}
+.emoji-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.e-btn{background:var(--paper);border:1px solid var(--dust);border-radius:2px;padding:5px 9px;cursor:pointer;font-size:15px;transition:all .15s;}
+.e-btn:hover,.e-btn.picked{border-color:var(--gold);background:rgba(201,146,74,.08);}
+.add-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.add-cat{background:var(--paper);border:none;border-bottom:1.5px solid var(--dust);padding:8px 0;font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);outline:none;cursor:pointer;}
+.add-input{flex:1;min-width:140px;background:transparent;border:none;border-bottom:1.5px solid var(--dust);padding:8px 0;font-size:17px;font-family:'Crimson Pro',serif;color:var(--ink);outline:none;transition:border-color .2s;}
+.add-input::placeholder{color:var(--dust);font-style:italic;}
+.add-input:focus{border-bottom-color:var(--gold);}
+.add-submit{background:var(--ink);color:var(--paper);border:none;padding:8px 18px;font-family:'Playfair Display',serif;font-size:16px;font-style:italic;cursor:pointer;transition:all .15s;flex-shrink:0;}
+.add-submit:hover{background:var(--gold);}
+
+/* WEEKLY */
+.week-wrap{margin-top:40px;}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:16px;}
+.w-day{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.w-lbl{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;}
+.w-dot{width:30px;height:30px;border-radius:50%;background:var(--paper2);border:1px solid var(--dust);display:flex;align-items:center;justify-content:center;font-family:'Crimson Pro',serif;font-size:12px;color:var(--ink3);transition:all .3s;}
+.w-dot.today{border-color:var(--gold);color:var(--gold);font-style:italic;}
+.w-dot.full{background:var(--sage);border-color:var(--sage);color:white;}
+.w-dot.part{background:rgba(138,171,142,.2);border-color:var(--sage);color:var(--sage);}
+
+/* QUOTE */
+.quote-area{margin-top:56px;padding-top:28px;border-top:1px solid var(--dust);}
+.q-text{font-family:'Playfair Display',serif;font-size:28px;font-style:italic;color:var(--dust);line-height:1.3;transition:color .4s;white-space:pre-line;}
+.q-text.glowing{color:var(--gold);}
+
+/* CHATBOT */
+.chat-fab{position:fixed;bottom:24px;right:24px;z-index:9000;width:52px;height:52px;border-radius:50%;background:var(--ink);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:all .2s;}
+.chat-fab:hover{background:var(--gold);transform:scale(1.08);}
+.chat-fab .chat-badge{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--sage);border:2px solid var(--paper);display:none;}
+.chat-fab .chat-badge.show{display:block;}
+.chat-window{position:fixed;bottom:88px;right:24px;z-index:9000;width:340px;max-width:calc(100vw - 48px);background:var(--paper);border:1px solid var(--dust);box-shadow:6px 6px 0 var(--paper3),12px 12px 0 var(--dust);display:none;flex-direction:column;transition:background .3s;}
+.chat-window.open{display:flex;}
+.chat-header{padding:14px 16px;border-bottom:1px solid var(--dust);display:flex;align-items:center;gap:10px;}
+.chat-header-icon{font-size:18px;}
+.chat-header-title{font-family:'Playfair Display',serif;font-size:18px;font-style:italic;flex:1;}
+.chat-header-sub{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink3);letter-spacing:2px;text-transform:uppercase;}
+.chat-close{background:none;border:none;color:var(--ink3);font-size:18px;cursor:pointer;padding:0 4px;transition:color .15s;}
+.chat-close:hover{color:var(--ink);}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;max-height:380px;min-height:200px;}
+.chat-msg{max-width:88%;font-size:15px;line-height:1.55;}
+.chat-msg.bot{align-self:flex-start;}
+.chat-msg.user{align-self:flex-end;text-align:right;}
+.chat-bubble{padding:10px 14px;line-height:1.55;}
+.chat-msg.bot .chat-bubble{background:var(--cream);border:1px solid var(--dust);font-family:'Crimson Pro',serif;color:var(--ink);}
+.chat-msg.user .chat-bubble{background:var(--ink);color:var(--paper);font-family:'Crimson Pro',serif;}
+.chat-msg-time{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink3);letter-spacing:1px;margin-top:4px;}
+.chat-typing{display:flex;gap:4px;align-items:center;padding:10px 14px;background:var(--cream);border:1px solid var(--dust);align-self:flex-start;}
+.chat-typing span{width:5px;height:5px;border-radius:50%;background:var(--ink3);animation:typingDot 1.2s ease-in-out infinite;}
+.chat-typing span:nth-child(2){animation-delay:.2s;}
+.chat-typing span:nth-child(3){animation-delay:.4s;}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+.chat-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-top:1px solid var(--dust);}
+.chat-suggestion{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--dust);background:var(--paper);color:var(--ink3);padding:5px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.chat-suggestion:hover{border-color:var(--gold);color:var(--gold);}
+.chat-input-row{display:flex;gap:0;border-top:1px solid var(--dust);}
+.chat-input{flex:1;background:transparent;border:none;padding:12px 14px;font-size:15px;font-family:'Crimson Pro',serif;color:var(--ink);outline:none;}
+.chat-input::placeholder{color:var(--dust);font-style:italic;}
+.chat-send{background:var(--ink);color:var(--paper);border:none;padding:12px 16px;cursor:pointer;font-size:16px;transition:background .15s;flex-shrink:0;}
+.chat-send:hover{background:var(--gold);}
+.chat-send:disabled{opacity:.4;cursor:not-allowed;}
+
+/* INSIGHTS */
+.insight-card{background:var(--cream);border:1px solid var(--dust);padding:20px;margin-bottom:16px;}
+.insight-title{font-family:'Playfair Display',serif;font-size:20px;font-style:italic;margin-bottom:8px;}
+.insight-body{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);letter-spacing:1px;line-height:1.7;}
+.insight-body strong{color:var(--ink);font-weight:400;}
+.habit-stats-list{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
+.hstat-row{display:flex;align-items:center;gap:10px;}
+.hstat-name{flex:1;font-size:15px;color:var(--ink);}
+.hstat-bar-bg{width:80px;height:4px;background:var(--paper3);flex-shrink:0;}
+.hstat-bar-fill{height:100%;background:var(--gold);transition:width .5s;}
+.hstat-pct{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);width:30px;text-align:right;flex-shrink:0;}
+.skip-badge{font-family:'DM Mono',monospace;font-size:8px;color:var(--blush);border:1px solid var(--blush);padding:1px 5px;letter-spacing:1px;flex-shrink:0;}
+.mood-log-btn{background:var(--cream);border:1px solid var(--dust);padding:8px 16px;font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;margin-top:12px;display:inline-block;}
+.mood-log-btn:hover{border-color:var(--gold);color:var(--gold);}
+.mood-history{display:flex;flex-direction:column;gap:0;margin-top:12px;}
+.mood-entry{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--dust);}
+.mood-entry-em{font-size:20px;flex-shrink:0;}
+.mood-entry-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);flex-shrink:0;letter-spacing:1px;}
+.mood-entry-note{font-size:14px;color:var(--ink2);flex:1;}
+.mood-entry-pct{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:var(--gold);flex-shrink:0;}
+
+/* MODALS */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:5000;align-items:center;justify-content:center;padding:24px;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--paper);border:1px solid var(--dust);padding:32px;max-width:480px;width:100%;position:relative;box-shadow:6px 6px 0 var(--paper3),12px 12px 0 var(--dust);max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Playfair Display',serif;font-size:28px;font-style:italic;margin-bottom:8px;}
+.modal-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);letter-spacing:2px;text-transform:uppercase;margin-bottom:24px;}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink3);transition:color .15s;}
+.modal-close:hover{color:var(--ink);}
+.mood-grid{display:flex;gap:10px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;}
+.mood-opt{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:10px 14px;border:1px solid var(--dust);background:var(--cream);transition:all .2s;}
+.mood-opt:hover,.mood-opt.sel{border-color:var(--gold);background:rgba(201,146,74,.08);}
+.mood-opt .mood-em{font-size:28px;}
+.mood-opt .mood-lbl{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase;}
+.mood-note{width:100%;background:var(--paper);border:1px solid var(--dust);border-bottom:2px solid var(--ink3);padding:10px 14px;font-size:15px;font-family:'Crimson Pro',serif;color:var(--ink);outline:none;resize:none;min-height:80px;margin-bottom:16px;transition:border-color .2s;}
+.mood-note:focus{border-bottom-color:var(--gold);}
+.edit-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:2px;display:block;margin-bottom:6px;margin-top:16px;}
+.edit-input{width:100%;background:var(--paper);border:none;border-bottom:1.5px solid var(--dust);padding:8px 0;font-size:17px;font-family:'Crimson Pro',serif;color:var(--ink);outline:none;transition:border-color .2s;}
+.edit-input:focus{border-bottom-color:var(--gold);}
+.edit-days{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px;}
+.edit-day-pill{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--dust);background:var(--paper);color:var(--ink3);padding:4px 10px;cursor:pointer;transition:all .15s;}
+.edit-day-pill.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.edit-intensity{display:flex;gap:8px;margin:8px 0;}
+.intens-btn{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:6px 12px;border:1px solid var(--dust);background:var(--paper);color:var(--ink3);cursor:pointer;transition:all .15s;text-transform:uppercase;}
+.intens-btn.sel{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" title="Toggle dark mode">☀️</button>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-wrap">
+    <div class="auth-brand">
+      <div class="auth-brand-name">Habit <em>Tracker</em></div>
+      <div class="auth-brand-sub">Your daily companion</div>
+    </div>
+    <div class="auth-card">
+      <div class="tab-row">
+        <button class="tab-btn active" id="tabLogin">Sign in</button>
+        <button class="tab-btn" id="tabSignup">Create account</button>
+      </div>
+      <div id="authMsg" class="auth-msg"></div>
+      <div class="f-group">
+        <label class="f-label">Email</label>
+        <input class="f-input" id="emailInput" type="email" placeholder="you@example.com"/>
+      </div>
+      <div class="f-group">
+        <label class="f-label">Password</label>
+        <input class="f-input" id="passwordInput" type="password" placeholder="••••••••"/>
+      </div>
+      <div class="f-group" id="confirmGroup" style="display:none">
+        <label class="f-label">Confirm password</label>
+        <input class="f-input" id="confirmInput" type="password" placeholder="••••••••"/>
+      </div>
+      <button class="btn-main" id="emailBtn">
+        <span class="btn-label">Sign in</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- VERIFY EMAIL SCREEN -->
+<div id="verifyEmailScreen">
+  <div class="verify-glyph">✉️</div>
+  <div class="verify-title">Check your inbox</div>
+  <div class="verify-body">We sent a link to <span class="verify-addr" id="verifyEmailAddr"></span>. Click it, then come back.</div>
+  <button class="btn-main" style="max-width:300px" id="verifiedBtn">
+    <span class="btn-label">I've verified — let me in</span>
+    <div class="spinner"></div>
+  </button>
+  <button class="btn-ghost" style="margin-top:12px" id="resendBtn">Resend email</button>
+  <button class="btn-ghost" style="margin-top:8px" id="backBtn">← Different account</button>
+  <div id="verifyMsg" class="auth-msg" style="margin-top:16px;max-width:340px;text-align:center"></div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="appScreen">
+  <div class="app-wrap">
+
+    <div class="app-header">
+      <div>
+        <div class="app-title">Habit <em>Tracker</em></div>
+        <div class="app-date" id="dateDisplay"></div>
+        <div class="user-strip">
+          <div class="u-avatar" id="userAvatar"></div>
+          <div class="u-name" id="userName"></div>
+          <span class="saving-dot" id="savingDot"></span>
+          <button class="u-signout" id="signoutBtn">Sign out</button>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="streak-num" id="streakNum">0</div>
+        <div class="streak-lbl">day streak</div>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="today">Today</button>
+      <button class="nav-tab" data-tab="insights">Insights</button>
+    </div>
+
+    <!-- TODAY TAB -->
+    <div class="tab-pane active" id="tab-today">
+      <div class="progress-row">
+        <div class="progress-ring-wrap">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle class="ring-bg" cx="36" cy="36" r="30"/>
+            <circle class="ring-fill" id="ringFill" cx="36" cy="36" r="30" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+          </svg>
+          <div class="ring-label" id="ringLabel">0</div>
+        </div>
+        <div>
+          <div class="progress-headline" id="progressHeadline">Ready to begin</div>
+          <div class="progress-sub" id="progressSub">0 of 0 habits today</div>
+        </div>
+      </div>
+
+      <div class="consistency-row">
+        <div class="cons-card">
+          <div class="cons-val" id="consScore">—</div>
+          <div class="cons-lbl">Consistency</div>
+          <div class="cons-sub" id="consDetail">last 30 days</div>
+        </div>
+        <div class="cons-card">
+          <div class="cons-val" id="bestStreak">0</div>
+          <div class="cons-lbl">Best streak</div>
+          <div class="cons-sub">all time</div>
+        </div>
+        <div class="cons-card">
+          <div class="cons-val" id="totalDone">0</div>
+          <div class="cons-lbl">Total done</div>
+          <div class="cons-sub">all time</div>
+        </div>
+      </div>
+
+      <div class="recovery-banner" id="recoveryBanner">
+        <div class="recovery-text">Recovery mode — you missed yesterday, but you're here today. That counts. ✦</div>
+      </div>
+
+      <div class="all-done" id="allDoneBanner">✦ Every habit complete — beautifully done</div>
+
+      <div class="section-head"><span class="section-icon">🌅</span><span class="section-head-label">Morning</span><div class="section-head-line"></div></div>
+      <div class="habits-grid" id="morningList"></div>
+
+      <div class="section-head"><span class="section-icon">☀️</span><span class="section-head-label">Afternoon</span><div class="section-head-line"></div></div>
+      <div class="habits-grid" id="dayList"></div>
+
+      <div class="section-head"><span class="section-icon">🌙</span><span class="section-head-label">Evening</span><div class="section-head-line"></div></div>
+      <div class="habits-grid" id="eveningList"></div>
+
+      <div class="add-wrap">
+        <span class="add-section-lbl">Schedule</span>
+        <div class="schedule-row">
+          <select class="preset-sel" id="schedPreset">
+            <option value="daily">Daily</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekends">Weekends</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div id="customDayPicker" style="display:none">
+          <div class="custom-day-row">
+            <div class="day-pill on" data-d="0">Sun</div>
+            <div class="day-pill on" data-d="1">Mon</div>
+            <div class="day-pill on" data-d="2">Tue</div>
+            <div class="day-pill on" data-d="3">Wed</div>
+            <div class="day-pill on" data-d="4">Thu</div>
+            <div class="day-pill on" data-d="5">Fri</div>
+            <div class="day-pill on" data-d="6">Sat</div>
+          </div>
+        </div>
+        <span class="add-section-lbl">Unlocks after (optional)</span>
+        <div class="chain-row">
+          <select class="chain-sel" id="chainAfter"><option value="">None</option></select>
+        </div>
+        <div class="emoji-row" id="emojiPicker"></div>
+        <div class="add-row">
+          <select class="add-cat" id="habitCategory">
+            <option value="morning">Morning</option>
+            <option value="day">Afternoon</option>
+            <option value="evening">Evening</option>
+          </select>
+          <input class="add-input" id="habitInput" placeholder="Add a new habit…" maxlength="60"/>
+          <button class="add-submit" id="addBtn">Add</button>
+        </div>
+      </div>
+
+      <div class="week-wrap">
+        <div class="section-head" style="padding-top:0"><span class="section-head-label">This week</span><div class="section-head-line"></div></div>
+        <div class="week-grid" id="weeklyGrid"></div>
+      </div>
+
+      <div class="quote-area"><div class="q-text" id="quoteText"></div></div>
+    </div>
+
+    <!-- INSIGHTS TAB -->
+    <div class="tab-pane" id="tab-insights">
+      <div class="insight-card">
+        <div class="insight-title">Habit performance</div>
+        <div class="insight-body" style="margin-bottom:8px">Completion rate over the last 30 days</div>
+        <div class="habit-stats-list" id="habitStatsList"></div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-title">Pattern detection</div>
+        <div class="insight-body" id="patternText">Complete more days to unlock pattern insights.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-title">Mood &amp; habits</div>
+        <div class="insight-body" id="moodCorrelText">Log mood check-ins to see how habits affect how you feel.</div>
+        <button class="mood-log-btn" id="moodLogBtn">+ Log today's mood</button>
+        <div class="mood-history" id="moodHistory"></div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-title">Weekly review</div>
+        <div class="insight-body" id="weeklyReview"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MOOD MODAL -->
+<div class="modal-backdrop" id="moodModal">
+  <div class="modal">
+    <button class="modal-close" id="moodClose">✕</button>
+    <div class="modal-title">How did today feel?</div>
+    <div class="modal-sub" id="moodModalDate"></div>
+    <div class="mood-grid">
+      <div class="mood-opt" data-score="1"><div class="mood-em">😞</div><div class="mood-lbl">Rough</div></div>
+      <div class="mood-opt" data-score="2"><div class="mood-em">😐</div><div class="mood-lbl">Okay</div></div>
+      <div class="mood-opt" data-score="3"><div class="mood-em">🙂</div><div class="mood-lbl">Good</div></div>
+      <div class="mood-opt" data-score="4"><div class="mood-em">😄</div><div class="mood-lbl">Great</div></div>
+      <div class="mood-opt" data-score="5"><div class="mood-em">🌟</div><div class="mood-lbl">Amazing</div></div>
+    </div>
+    <textarea class="mood-note" id="moodNote" placeholder="Any notes about today? (optional)"></textarea>
+    <button class="btn-main" id="saveMoodBtn"><span class="btn-label">Save reflection</span><div class="spinner"></div></button>
+  </div>
+</div>
+
+<!-- EDIT HABIT MODAL -->
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <button class="modal-close" id="editClose">✕</button>
+    <div class="modal-title">Edit habit</div>
+    <div class="modal-sub">Adjust name, schedule, or intensity</div>
+    <input type="hidden" id="editHabitId"/>
+    <span class="edit-lbl">Habit name</span>
+    <input class="edit-input" id="editName" maxlength="60"/>
+    <span class="edit-lbl">Schedule</span>
+    <div class="edit-days" id="editDays">
+      <div class="edit-day-pill on" data-d="0">Sun</div>
+      <div class="edit-day-pill on" data-d="1">Mon</div>
+      <div class="edit-day-pill on" data-d="2">Tue</div>
+      <div class="edit-day-pill on" data-d="3">Wed</div>
+      <div class="edit-day-pill on" data-d="4">Thu</div>
+      <div class="edit-day-pill on" data-d="5">Fri</div>
+      <div class="edit-day-pill on" data-d="6">Sat</div>
+    </div>
+    <span class="edit-lbl">Today's effort</span>
+    <div class="edit-intensity">
+      <button class="intens-btn" data-v="full">Full ✓</button>
+      <button class="intens-btn" data-v="half">Half effort</button>
+      <button class="intens-btn" data-v="skip">Skip today</button>
+    </div>
+    <button class="btn-main" style="margin-top:16px" id="saveEditBtn"><span class="btn-label">Save changes</span><div class="spinner"></div></button>
+  </div>
+</div>
+
+
+<!-- CHATBOT -->
+<button class="chat-fab" id="chatFab" title="Ask your habit coach">✦<div class="chat-badge" id="chatBadge"></div></button>
+
+<div class="chat-window" id="chatWindow">
+  <div class="chat-header">
+    <div class="chat-header-icon">✦</div>
+    <div>
+      <div class="chat-header-title">Habit Coach</div>
+      <div class="chat-header-sub">Powered by AI</div>
+    </div>
+    <button class="chat-close" id="chatClose">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-suggestions" id="chatSuggestions">
+    <button class="chat-suggestion" data-q="How can I build habits more efficiently?">Be more efficient</button>
+    <button class="chat-suggestion" data-q="Why do I keep skipping my habits?">Why do I skip?</button>
+    <button class="chat-suggestion" data-q="What's the best time of day for habits?">Best time of day</button>
+    <button class="chat-suggestion" data-q="How do I stay motivated?">Stay motivated</button>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chatInput" placeholder="Ask your habit coach…" maxlength="300"/>
+    <button class="chat-send" id="chatSend">➤</button>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, signOut as fbSignOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -552,7 +1139,7 @@ let currentUser=null, habits=[], weeklyData={}, moodLog={};
 let selectedEmoji='✨', currentTab='login', addDays=[0,1,2,3,4,5,6];
 let editingHabit=null, selectedMoodScore=null;
 
-const EMOJIS=['✨','💧','🏃','🧘','📖','✍️','🥗','💊','🛌','🧠','🎯','💪','🌿','☕','🚴','🎨','🎵','🙏','💍','🐶','🐱','🥁','🚿','🔓','🔒','🎬','💀','🎂','🍾','💵'];
+const EMOJIS=['✨','💧','🏃','🧘','📖','✍️','🥗','💊','🛌','🧠','🎯','💪','🌿','☕','🚴','🎨','🎵','🙏'];
 const HEADLINES=["Ready to begin","Off to a good start","Making progress","More than halfway","Almost there!"];
 const QUOTES_DEFAULT=["Small acts,\nbig life.","Today is\nthe day.","Every day\nis a choice.","Consistency\nis the work."];
 const QUOTES_DONE=["Beautifully\ndone.","Discipline\nis freedom.","You showed up.\nAgain.","All done.\nRest well."];
@@ -1127,33 +1714,9 @@ function generateWeeklyReview(){
   const avg=Math.round(data.reduce((a,d)=>a+d.done/d.total,0)/data.length*100);
   return`<strong>This week:</strong> ${avg}% average. Best day: ${Math.round(best.done/best.total*100)}%. Toughest: ${Math.round(worst.done/worst.total*100)}%.`;
 }
-</script>
-<!-- CHATBOT -->
-<button class="chat-fab" id="chatFab" title="Ask your habit coach">✦<div class="chat-badge" id="chatBadge"></div></button>
 
-<div class="chat-window" id="chatWindow">
-  <div class="chat-header">
-    <div class="chat-header-icon">✦</div>
-    <div>
-      <div class="chat-header-title">Habit Coach</div>
-      <div class="chat-header-sub">Powered by AI</div>
-    </div>
-    <button class="chat-close" id="chatClose">✕</button>
-  </div>
-  <div class="chat-messages" id="chatMessages"></div>
-  <div class="chat-suggestions" id="chatSuggestions">
-    <button class="chat-suggestion" data-q="How can I build habits more efficiently?">Be more efficient</button>
-    <button class="chat-suggestion" data-q="Why do I keep skipping my habits?">Why do I skip?</button>
-    <button class="chat-suggestion" data-q="What's the best time of day for habits?">Best time of day</button>
-    <button class="chat-suggestion" data-q="How do I stay motivated?">Stay motivated</button>
-  </div>
-  <div class="chat-input-row">
-    <input class="chat-input" id="chatInput" placeholder="Ask your habit coach…" maxlength="300"/>
-    <button class="chat-send" id="chatSend">➤</button>
-  </div>
-</div>
 
-<script>
+// ── CHATBOT (moved inside module for scope access) ──
 // ── CHATBOT ──
 const chatFab=document.getElementById('chatFab');
 const chatWindow=document.getElementById('chatWindow');
@@ -1799,6 +2362,7 @@ function sendChatMessage(text){
     chatInput.focus();
   },delay);
 }
+
 </script>
 </body>
 </html>
