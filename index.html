@@ -1882,7 +1882,7 @@ function addBotMessage(text, opts={}){
   if(!opts.noReact){
     const emojiBar=document.createElement('div');
     emojiBar.className='chat-emoji-bar';
-    ['👍','❤️','💡'].forEach(em=>{
+    ['👍','❤️','💡','❔'].forEach(em=>{
       const btn=document.createElement('button');
       btn.className='chat-emoji-btn';
       btn.textContent=em;
@@ -1892,7 +1892,7 @@ function addBotMessage(text, opts={}){
           btn.style.transform='scale(1.4)';
           setTimeout(()=>btn.style.transform='',300);
         }
-      };
+      }; hi
       emojiBar.appendChild(btn);
     });
     meta.appendChild(emojiBar);
