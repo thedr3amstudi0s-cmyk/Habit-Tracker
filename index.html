@@ -3,7 +3,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Habit Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Crimson+Pro:ital,wght@0,400;1,300&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
 :root {
   --paper:#faf6f0;--paper2:#f3ede3;--paper3:#ede4d6;
@@ -667,6 +670,21 @@ body::after{content:'';position:fixed;inset:0;background-image:repeating-linear-
   </div>
 </div>
 
+<script>
+// Fast-path: show auth screen immediately, no waiting for Firebase
+// If user was previously logged in their data is in localStorage
+(function(){
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('hc_'));
+  const l=document.getElementById('loadingScreen');
+  // If no cached session at all, show auth right away
+  if(keys.length===0){
+    if(l) l.style.display='none';
+    const a=document.getElementById('authScreen');
+    if(a) a.style.display='flex';
+  }
+  // Otherwise keep loading screen — Firebase will resolve quickly with cached auth
+})();
+</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, signOut as fbSignOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -896,7 +914,7 @@ const _authFallback=setTimeout(()=>{
   const ap=document.getElementById('appScreen');
   if(l) l.style.display='none';
   if(a&&a.style.display==='none'&&ap&&ap.style.display==='none') a.style.display='flex';
-},3500);
+},500);
 
 // ── AUTH STATE ──
 onAuthStateChanged(auth,async user=>{
