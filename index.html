@@ -374,6 +374,9 @@ body::after{content:'';position:fixed;inset:0;background-image:repeating-linear-
   .h-actions{opacity:0;}
   .habit-card:hover .h-actions{opacity:1;}
 }
+/* ── WORLD NAV BUTTON ── */
+.nav-tab-world{display:flex;align-items:center;gap:5px;color:var(--gold)!important;}
+.nav-tab-world:hover{color:var(--ink)!important;}
 </style>
 </head>
 <body>
@@ -450,6 +453,7 @@ body::after{content:'';position:fixed;inset:0;background-image:repeating-linear-
 
     <div class="nav-tabs">
       <button class="nav-tab active" data-tab="today">Today</button>
+      <button class="nav-tab nav-tab-world" id="worldNavBtn" title="Open Habit World">🌍 World</button>
       <button class="nav-tab" data-tab="insights">Insights</button>
     </div>
 
@@ -689,6 +693,7 @@ themeToggle.addEventListener('click',()=>{
 // ── NAV TABS ──
 document.querySelectorAll('.nav-tab').forEach(btn=>{
   btn.addEventListener('click',()=>{
+    if(btn.id==='worldNavBtn'){window.location.href='habit-world.html';return;}
     document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
@@ -1737,11 +1742,11 @@ function getContext(){
 // Small talk handled before the knowledge base
 const SMALL_TALK=[
   {
-    keys:['how are you','how r you','how are u','hows it going','how is it going','how do you do','you doing','you ok','you good','hru'],
+    keys:['how are you','how r you','how are u','hows it going','how is it going','how do you do','you doing','you ok','you good'],
     replies:["I'm doing great, thanks for asking! I'm here whenever you need habit advice. What's on your mind?","Feeling helpful! How are YOU doing — and more importantly, how are the habits going?","All good on my end! How about you — anything habit-related I can help with today?","Ready and here for you! What habit questions can I help with?"]
   },
   {
-    keys:['hello','hi there','hey there','good morning','good evening','good afternoon','howdy','greetings','sup','what\'s up','whats up','yo ','hey ','hi ','wsp'],
+    keys:['hello','hi there','hey there','good morning','good evening','good afternoon','howdy','greetings','sup','what\'s up','whats up','yo ','hey ','hi '],
     replies:[
       ctx=>`Hey! ${ctx.streak>0?'I see you\'re on a '+ctx.streak+'-day streak — nice work. ':''}What can I help you with today?`,
       ctx=>`Hi! ${ctx.doneTodayCount>0?'You\'ve already done '+ctx.doneTodayCount+' habit'+(ctx.doneTodayCount>1?'s':'')+' today — great start. ':''}Ask me anything about habits and routines.`,
@@ -1882,7 +1887,7 @@ function addBotMessage(text, opts={}){
   if(!opts.noReact){
     const emojiBar=document.createElement('div');
     emojiBar.className='chat-emoji-bar';
-    ['👍','❤️','💡','❔'].forEach(em=>{
+    ['👍','❤️','💡'].forEach(em=>{
       const btn=document.createElement('button');
       btn.className='chat-emoji-btn';
       btn.textContent=em;
@@ -2044,6 +2049,7 @@ function sendChatMessage(text){
     }});
   },delay);
 }
+
 
 </script>
 </body>
