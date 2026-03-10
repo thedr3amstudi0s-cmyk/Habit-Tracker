@@ -22,7 +22,15 @@ body{background:var(--paper);color:var(--ink);font-family:'Crimson Pro',serif;mi
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
 body::after{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(transparent,transparent 31px,rgba(180,160,130,.08) 31px,rgba(180,160,130,.08) 32px);pointer-events:none;z-index:0;}
 
-/* THEME TOGGLE */
+/* LOADING STATE */
+#loadingScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;position:relative;z-index:1;}
+.loading-brand{font-family:'Playfair Display',serif;font-size:40px;font-style:italic;color:var(--ink);}
+.loading-brand em{color:var(--gold);}
+.loading-dots{display:flex;gap:6px;}
+.loading-dots span{width:7px;height:7px;border-radius:50%;background:var(--dust);animation:ldot .9s ease-in-out infinite;}
+.loading-dots span:nth-child(2){animation-delay:.15s;}
+.loading-dots span:nth-child(3){animation-delay:.3s;}
+@keyframes ldot{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
 .theme-toggle{position:fixed;top:16px;right:16px;z-index:10000;width:38px;height:38px;border-radius:50%;background:var(--cream);border:1px solid var(--dust);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:2px 2px 0 var(--dust);}
 .theme-toggle:hover{border-color:var(--gold);box-shadow:2px 2px 0 var(--gold);transform:translate(-1px,-1px);}
 
@@ -382,6 +390,12 @@ body::after{content:'';position:fixed;inset:0;background-image:repeating-linear-
 <body>
 
 <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">☀️</button>
+
+<!-- LOADING SCREEN -->
+<div id="loadingScreen">
+  <div class="loading-brand">Habit <em>Tracker</em></div>
+  <div class="loading-dots"><span></span><span></span><span></span></div>
+</div>
 
 <!-- AUTH SCREEN -->
 <div id="authScreen">
@@ -875,8 +889,18 @@ function openEditModal(h){
   document.getElementById('editModal').classList.add('open');
 }
 
+// ── FIREBASE FALLBACK: show auth if onAuthStateChanged never fires (CDN blocked/slow) ──
+const _authFallback=setTimeout(()=>{
+  const l=document.getElementById('loadingScreen');
+  const a=document.getElementById('authScreen');
+  const ap=document.getElementById('appScreen');
+  if(l) l.style.display='none';
+  if(a&&a.style.display==='none'&&ap&&ap.style.display==='none') a.style.display='flex';
+},3500);
+
 // ── AUTH STATE ──
 onAuthStateChanged(auth,async user=>{
+  clearTimeout(_authFallback);
   if(user){
     currentUser=user;
     if(user.providerData[0]?.providerId==='password'&&!user.emailVerified){
@@ -994,9 +1018,11 @@ function setUserBar(user){
 
 // ── HELPERS ──
 function showScreen(n){
+  const loading=document.getElementById('loadingScreen');
   const auth=document.getElementById('authScreen');
   const verify=document.getElementById('verifyEmailScreen');
   const app=document.getElementById('appScreen');
+  if(loading) loading.style.display='none';
   auth.style.display=n==='auth'?'flex':'none';
   verify.classList.toggle('show',n==='verifyEmail');
   app.classList.toggle('show',n==='app');
